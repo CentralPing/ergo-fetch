@@ -13,3 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - DECISIONS.md with full architectural decisions from Lead Architect design session
 - PLAN.md with Phase 1 implementation plan (module specifications, ordering, acceptance criteria)
 - Minimal `createClient()` factory (scaffold — not yet functional)
+- `stores/memory.js` — in-memory CacheStore with FIFO eviction (`createMemoryStore`)
+- `lib/problem-details.js` — RFC 9457 Problem Details parsing:
+  - `ProblemDetailsError` class with standard fields and null-prototype extensions
+  - `isProblemResponse(response)` — content-type detection
+  - `parseProblemDetails(response)` — async parser with graceful fallback
+  - `isRetryable(err)` / `isValidation(err)` / `isAuth(err)` — error classifiers
