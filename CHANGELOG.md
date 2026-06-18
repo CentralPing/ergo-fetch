@@ -33,3 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`createRateLimitInterceptor`, `parseRetryAfter`): X-RateLimit-* header parsing,
   automatic 429 retry signaling with Retry-After + Reset fallback, optional
   proactive throttling
+- `lib/retry.js` — Retry interceptor with exponential backoff
+  (`createRetryInterceptor`): configurable backoff (exponential/linear) with
+  AWS-style full jitter, Retry-After header override, per-request attempt
+  tracking via WeakMap, idempotency-aware retry eligibility

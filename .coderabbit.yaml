@@ -66,8 +66,10 @@ reviews:
     - path: "lib/retry.js"
       instructions: >
         Retry logic with exponential backoff and jitter. Must respect
-        Retry-After headers. Must not retry non-idempotent requests
-        unless explicitly configured. Retry budget prevents infinite loops.
+        Retry-After headers. 429/503 are always retryable (server declined
+        to process the request). 500/502/504 retry only for idempotent
+        requests (GET/HEAD/OPTIONS or ctx.idempotent === true). Retry
+        budget prevents infinite loops.
 
     - path: "stores/**"
       instructions: >
