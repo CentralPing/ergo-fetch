@@ -1,0 +1,30 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      all-patches:
+        update-types:
+          - "patch"
+      dev-minor:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+      dev-major:
+        dependency-type: "development"
+        update-types:
+          - "major"
+      prod-minor:
+        dependency-type: "production"
+        update-types:
+          - "minor"
+      prod-major:
+        dependency-type: "production"
+        update-types:
+          - "major"
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
