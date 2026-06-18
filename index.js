@@ -13,3 +13,6 @@ export {
   isAuth
 } from './lib/problem-details.js';
 export {createMemoryStore} from './stores/memory.js';
+export {createRequestIdInterceptor} from './lib/request-id.js';
+export {createPreferInterceptor} from './lib/prefer.js';
+export {createCsrfInterceptor} from './lib/csrf.js';
