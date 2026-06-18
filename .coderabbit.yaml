@@ -3,9 +3,8 @@ early_access: true
 
 tone_instructions: >
   Focus on RFC compliance (9457, 9110, 8288, 7240), client-side security
-  (CSRF lifecycle, credential management, origin validation), and correct
-  interaction with @centralping/ergo-router conventions. Verify interceptor
-  pipeline ordering, fail-fast validation, and cache consistency.
+  (CSRF, credentials, origin validation), and ergo-router conventions.
+  Verify interceptor ordering, fail-fast validation, and cache consistency.
 
 reviews:
   profile: assertive
