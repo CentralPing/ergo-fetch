@@ -20,7 +20,10 @@ describe('@centralping/ergo-fetch public exports', () => {
     'createMemoryStore',
     'createRequestIdInterceptor',
     'createPreferInterceptor',
-    'createCsrfInterceptor'
+    'createCsrfInterceptor',
+    'createConditionalInterceptor',
+    'createRateLimitInterceptor',
+    'parseRetryAfter'
   ];
 
   for (const name of expectedExports) {
