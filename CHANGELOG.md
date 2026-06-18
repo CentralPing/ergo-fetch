@@ -25,3 +25,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   pre-computed header value, Preference-Applied response parsing
 - `lib/csrf.js` — CSRF token lifecycle interceptor (`createCsrfInterceptor`):
   auto-extraction from safe-method responses, injection on unsafe same-origin requests
+- `lib/conditional.js` — ETag/Last-Modified conditional request interceptor
+  (`createConditionalInterceptor`): transparent 304 body substitution, response
+  caching on success, cache invalidation on writes, If-Match with strong ETags
+  only per RFC 9110 §13.1.1
+- `lib/rate-limit.js` — Rate limit tracking interceptor
+  (`createRateLimitInterceptor`, `parseRetryAfter`): X-RateLimit-* header parsing,
+  automatic 429 retry signaling with Retry-After + Reset fallback, optional
+  proactive throttling
