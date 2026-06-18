@@ -1,0 +1,274 @@
+language: en-US
+early_access: true
+
+tone_instructions: >
+  Focus on RFC compliance (9457, 9110, 8288, 7240), client-side security
+  (CSRF lifecycle, credential management, origin validation), and correct
+  interaction with @centralping/ergo-router conventions. Verify interceptor
+  pipeline ordering, fail-fast validation, and cache consistency.
+
+reviews:
+  profile: assertive
+  request_changes_workflow: true
+  high_level_summary: true
+  high_level_summary_in_walkthrough: true
+  collapse_walkthrough: false
+  changed_files_summary: true
+  sequence_diagrams: true
+  review_details: true
+  poem: false
+  review_status: true
+  related_issues: true
+  related_prs: true
+  assess_linked_issues: true
+  estimate_code_review_effort: true
+  prompt_for_ai_agents: true
+  abort_on_close: true
+
+  path_filters:
+    - "!assets/**"
+
+  path_instructions:
+    - path: "lib/client.js"
+      instructions: >
+        Core fetch wrapper with interceptor pipeline. Must validate inputs
+        before sending (fail-fast), correctly compose interceptors in
+        Prepare > Enrich > Send > Interpret order, and handle abort/timeout.
+        Never expose raw fetch errors without wrapping.
+
+    - path: "lib/conditional.js"
+      instructions: >
+        ETag and Last-Modified conditional request handling per RFC 9110 §13.
+        Must use weak comparison for If-None-Match, strong for If-Match.
+        Cache store is pluggable — verify interface contract compliance.
+        304 handling must be transparent to callers.
+
+    - path: "lib/problem-details.js"
+      instructions: >
+        RFC 9457 Problem Details parsing. Must detect application/problem+json
+        content type, parse into typed structure with all standard fields
+        (type, title, status, detail, instance) plus extension members.
+        Classification logic for retryable vs terminal errors.
+
+    - path: "lib/rate-limit.js"
+      instructions: >
+        Client-side rate limit tracking from X-RateLimit-* headers.
+        Must respect Retry-After on 429 responses. Proactive throttling
+        is opt-in only. State tracking is per-endpoint.
+
+    - path: "lib/pagination.js"
+      instructions: >
+        RFC 8288 Link header parsing and async iterator interface.
+        Must support both offset-based and cursor-based strategies.
+        Iterator must handle backpressure correctly and expose metadata
+        (total count, current page, links).
+
+    - path: "lib/retry.js"
+      instructions: >
+        Retry logic with exponential backoff and jitter. Must respect
+        Retry-After headers. Must not retry non-idempotent requests
+        unless explicitly configured. Retry budget prevents infinite loops.
+
+    - path: "stores/**"
+      instructions: >
+        Pluggable storage adapters for ETag cache and offline queue.
+        Must implement the defined store interface contract. Memory store
+        is the default. Web Storage and IndexedDB are optional.
+
+  auto_review:
+    enabled: true
+    auto_incremental_review: true
+    drafts: false
+    ignore_title_keywords:
+      - "WIP"
+      - "DO NOT MERGE"
+      - "[skip review]"
+
+  finishing_touches:
+    docstrings:
+      enabled: false
+    unit_tests:
+      enabled: false
+    simplify:
+      enabled: false
+
+  pre_merge_checks:
+    docstrings:
+      mode: "off"
+    title:
+      mode: "warning"
+      requirements: |
+        PR title must follow conventional commit format: `{type}: {description} (#{issue-number})`
+        where type is one of: feat, fix, refactor, docs, chore, test, spike.
+        Description should be lowercase, imperative mood, concise.
+    description:
+      mode: "off"
+    issue_assessment:
+      mode: "warning"
+    custom_checks:
+      - name: "RFC Compliance"
+        mode: "warning"
+        instructions: |
+          Pass/fail criteria for changed files:
+          - FAIL if HTTP header handling does not follow the relevant RFC
+            (e.g., ETag comparison semantics, Link header parsing, Retry-After).
+          - FAIL if error responses are not parsed as RFC 9457 Problem Details
+            when Content-Type indicates application/problem+json.
+          - PASS if all HTTP semantics follow their respective RFCs.
+
+      - name: "Fail-Fast Validation"
+        mode: "warning"
+        instructions: |
+          Pass/fail criteria for changed files:
+          - FAIL if programmer errors (invalid URLs, missing required params,
+            type mismatches) can reach the network layer instead of throwing
+            synchronously at call time.
+          - PASS if all input validation happens before fetch() is called.
+
+      - name: "JSDoc Completeness"
+        mode: "warning"
+        instructions: |
+          Pass/fail criteria for changed JavaScript source files (excluding tests):
+          - FAIL if a new exported function lacks @param and @returns JSDoc annotations.
+          - FAIL if JSDoc uses uppercase primitives (String, Number, Boolean instead of
+            string, number, boolean), including inside compound types.
+          - FAIL if JSDoc uses @return instead of @returns.
+          - PASS if all JSDoc follows conventions, or if no source files changed.
+          Exclude test files from this check.
+
+      - name: "Zero Tech Debt"
+        mode: "warning"
+        instructions: |
+          Pass/fail criteria for all changed files:
+          - FAIL if new lines (added in this PR, not pre-existing) contain common
+            debt-marker or unfinished-work comments.
+          - PASS if no such markers are found in newly added lines.
+          This is a pre-release project with a zero-tech-debt policy — all work is either
+          done now or tracked as a GitHub issue.
+
+  tools:
+    ast-grep:
+      essential_rules: true
+    github-checks:
+      enabled: true
+      timeout_ms: 300000
+    shellcheck:
+      enabled: true
+    markdownlint:
+      enabled: true
+    languagetool:
+      enabled: true
+      level: "default"
+    gitleaks:
+      enabled: true
+    trufflehog:
+      enabled: true
+    yamllint:
+      enabled: true
+    actionlint:
+      enabled: true
+    zizmor:
+      enabled: true
+    biome:
+      enabled: false
+    eslint:
+      enabled: false
+    oxc:
+      enabled: false
+    ruff:
+      enabled: false
+    pylint:
+      enabled: false
+    flake8:
+      enabled: false
+    golangci-lint:
+      enabled: false
+    clippy:
+      enabled: false
+    phpstan:
+      enabled: false
+    phpmd:
+      enabled: false
+    phpcs:
+      enabled: false
+    swiftlint:
+      enabled: false
+    rubocop:
+      enabled: false
+    detekt:
+      enabled: false
+    buf:
+      enabled: false
+    regal:
+      enabled: false
+    pmd:
+      enabled: false
+    clang:
+      enabled: false
+    cppcheck:
+      enabled: false
+    fortitude:
+      enabled: false
+    fbinfer:
+      enabled: false
+    sqlfluff:
+      enabled: false
+    hadolint:
+      enabled: false
+    circleci:
+      enabled: false
+    prisma-lint:
+      enabled: false
+    luacheck:
+      enabled: false
+    brakeman:
+      enabled: false
+    dotenv-lint:
+      enabled: false
+    htmlhint:
+      enabled: false
+    stylelint:
+      enabled: false
+    checkmake:
+      enabled: false
+    osv-scanner:
+      enabled: false
+    blinter:
+      enabled: false
+    smarty-lint:
+      enabled: false
+    ember-template-lint:
+      enabled: false
+    psscriptanalyzer:
+      enabled: false
+
+chat:
+  auto_reply: true
+
+knowledge_base:
+  learnings:
+    scope: auto
+  issues:
+    scope: auto
+  pull_requests:
+    scope: auto
+  web_search:
+    enabled: true
+  code_guidelines:
+    enabled: true
+  linked_repositories:
+    - repository: "CentralPing/ergo-router"
+      instructions: >
+        REST-compliant router that ergo-fetch is designed to interact with.
+        ergo-fetch implements client-side counterparts to ergo-router's
+        transport concerns (rate limiting, CORS, request IDs, CSRF) and
+        pipeline features (conditional requests, pagination, Prefer header).
+    - repository: "CentralPing/ergo"
+      instructions: >
+        Core middleware toolkit. ergo-fetch interacts with ergo's response
+        conventions (RFC 9457 Problem Details, ETag generation, Link headers,
+        X-RateLimit-* headers, Prefer header semantics).
+    - repository: "CentralPing/centralping.github.io"
+      instructions: >
+        Project documentation website. API reference and guides for
+        ergo-fetch will be published here alongside ergo and ergo-router docs.

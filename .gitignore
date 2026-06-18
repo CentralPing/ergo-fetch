@@ -1,0 +1,9 @@
+node_modules
+coverage
+types
+npm-debug.log
+.DS_Store
+
+# Agent/editor local files
+DECISIONS.md
+.cursor/

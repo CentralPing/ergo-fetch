@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": false,
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "target": "es2022",
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "skipLibCheck": true,
+    "outDir": "types"
+  },
+  "include": ["index.js", "lib/**/*.js", "stores/**/*.js"],
+  "exclude": ["**/*.spec.*.js"]
+}
