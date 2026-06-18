@@ -22,6 +22,30 @@ const DEFAULT_MAX_ENTRIES = 1024;
  */
 
 /**
+ * @typedef {object} QueueEntry
+ * @property {string} method - HTTP method.
+ * @property {string} url - Request URL.
+ * @property {object} [headers] - Request headers.
+ * @property {*} [body] - Request body.
+ * @property {string} [idempotencyKey] - Idempotency key for replay safety.
+ */
+
+/**
+ * Queue store interface for offline request queuing (Phase 2).
+ *
+ * Implementations maintain ordered entries that are replayed on reconnection.
+ * All methods are async to support IndexedDB and other async backends.
+ *
+ * @typedef {object} QueueStore
+ * @property {(entry: QueueEntry) => Promise<string>} enqueue - Adds an entry and returns its ID.
+ * @property {() => Promise<QueueEntry | undefined>} peek - Returns the next entry without removing it.
+ * @property {(id: string) => Promise<void>} dequeue - Removes an entry by ID.
+ * @property {() => Promise<QueueEntry[]>} list - Returns all queued entries in order.
+ * @property {() => Promise<void>} clear - Removes all queued entries.
+ * @property {() => Promise<number>} size - Returns the number of queued entries.
+ */
+
+/**
  * Creates an in-memory cache store backed by a Map.
  *
  * When the store exceeds `maxEntries`, the oldest entry (first inserted) is
