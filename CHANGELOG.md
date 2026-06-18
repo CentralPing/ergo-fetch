@@ -19,3 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `isProblemResponse(response)` — content-type detection
   - `parseProblemDetails(response)` — async parser with graceful fallback
   - `isRetryable(err)` / `isValidation(err)` / `isAuth(err)` — error classifiers
+- `lib/request-id.js` — X-Request-Id interceptor (`createRequestIdInterceptor`):
+  optional UUID generation for outgoing requests, captures response request IDs
+- `lib/prefer.js` — RFC 7240 Prefer header interceptor (`createPreferInterceptor`):
+  pre-computed header value, Preference-Applied response parsing
+- `lib/csrf.js` — CSRF token lifecycle interceptor (`createCsrfInterceptor`):
+  auto-extraction from safe-method responses, injection on unsafe same-origin requests
