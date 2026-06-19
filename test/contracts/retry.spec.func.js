@@ -55,8 +55,15 @@ describe('[Contract] Retry — Transient Failure Recovery', () => {
       retry: {maxAttempts: 3, baseDelay: 0, jitter: 'none'}
     });
 
-    const {rejects} = assert;
-    await rejects(() => client.get('/error/404'), {name: 'ProblemDetailsError', status: 404});
+    await assert.rejects(
+      () => client.get('/error/404'),
+      err => {
+        assert.equal(err.name, 'ProblemDetailsError');
+        assert.equal(err.status, 404);
+        assert.equal(err.extensions?._callCount, 1, 'Should have made exactly 1 attempt');
+        return true;
+      }
+    );
   });
 
   it('does not retry non-idempotent methods for 500', async () => {
@@ -66,11 +73,15 @@ describe('[Contract] Retry — Transient Failure Recovery', () => {
       retry: {maxAttempts: 3, baseDelay: 0, jitter: 'none'}
     });
 
-    const {rejects} = assert;
-    await rejects(() => client.post('/error/500', {body: {}}), {
-      name: 'ProblemDetailsError',
-      status: 500
-    });
+    await assert.rejects(
+      () => client.post('/error/500', {body: {}}),
+      err => {
+        assert.equal(err.name, 'ProblemDetailsError');
+        assert.equal(err.status, 500);
+        assert.equal(err.extensions?._callCount, 1, 'Should have made exactly 1 attempt');
+        return true;
+      }
+    );
   });
 
   it('aborts on timeout before retry completes', async () => {

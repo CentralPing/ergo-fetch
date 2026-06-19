@@ -91,7 +91,24 @@ function registerResourceRoutes(router) {
       body += chunk;
     });
     req.on('end', () => {
-      const parsed = body ? JSON.parse(body) : {};
+      let parsed;
+
+      try {
+        parsed = body ? JSON.parse(body) : {};
+      } catch {
+        res.setHeader('content-type', 'application/problem+json');
+        res.statusCode = 400;
+        res.end(
+          JSON.stringify({
+            type: 'https://httpstatuses.com/400',
+            title: 'Bad Request',
+            status: 400,
+            detail: 'Malformed JSON body'
+          })
+        );
+        return;
+      }
+
       resourceBody = {...resourceBody, ...parsed, version: resourceBody.version + 1};
       currentEtag = `"v${resourceBody.version}"`;
 
@@ -148,6 +165,9 @@ function registerRateLimitRoutes(router) {
  * GET|POST /error/:status — returns RFC 9457 problem+json for any status code.
  */
 function registerErrorRoutes(router) {
+  /** @type {Map<string, number>} */
+  const callCounts = new Map();
+
   /**
    * @param {import('node:http').IncomingMessage} req - Incoming request.
    * @param {import('node:http').ServerResponse} res - Server response.
@@ -170,12 +190,17 @@ function registerErrorRoutes(router) {
       return;
     }
 
+    const key = `${req.method}:${params.status}`;
+    const count = (callCounts.get(key) ?? 0) + 1;
+    callCounts.set(key, count);
+
     const problem = {
       type: `https://httpstatuses.com/${status}`,
       title: statusTitle(status),
       status,
       detail: `Synthetic ${status} error for testing`,
-      instance: `/error/${status}`
+      instance: `/error/${status}`,
+      _callCount: count
     };
 
     res.setHeader('content-type', 'application/problem+json');
