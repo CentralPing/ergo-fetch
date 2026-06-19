@@ -91,10 +91,9 @@ describe('[Contract] Retry — Transient Failure Recovery', () => {
       retry: {maxAttempts: 3, baseDelay: 0, jitter: 'none'}
     });
 
-    await assert.rejects(
-      () => client.get('/timeout', {query: {ms: '10000'}}),
-      err => err.name === 'TimeoutError' || err.name === 'AbortError'
-    );
+    await assert.rejects(() => client.get('/timeout', {query: {ms: '10000'}}), {
+      name: 'TimeoutError'
+    });
   });
 
   it('retry with per-request retry disabled does not retry', async () => {

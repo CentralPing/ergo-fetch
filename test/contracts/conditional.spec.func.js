@@ -65,7 +65,8 @@ describe('[Contract] Conditional Requests — ETag / Last-Modified', () => {
 
     await assert.rejects(() => writerB.put('/resource', {body: {name: 'Writer B Stale'}}), {
       name: 'ProblemDetailsError',
-      status: 412
+      status: 412,
+      detail: 'ETag mismatch'
     });
   });
 });
