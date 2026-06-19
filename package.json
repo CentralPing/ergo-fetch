@@ -96,6 +96,8 @@
     }
   },
   "devDependencies": {
+    "@centralping/ergo": "^0.6.1",
+    "@centralping/ergo-router": "^0.6.0",
     "@eslint/js": "^10.0.1",
     "@types/node": "^25.9.1",
     "c8": "^11.0.0",
