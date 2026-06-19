@@ -23,7 +23,8 @@ describe('@centralping/ergo-fetch public exports', () => {
     'createCsrfInterceptor',
     'createConditionalInterceptor',
     'createRateLimitInterceptor',
-    'parseRetryAfter'
+    'parseRetryAfter',
+    'createRetryInterceptor'
   ];
 
   for (const name of expectedExports) {
