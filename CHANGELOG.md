@@ -12,7 +12,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Project scaffolding: package.json, ESLint, Prettier, TypeScript declarations, CI/CD workflows
 - DECISIONS.md with full architectural decisions from Lead Architect design session
 - PLAN.md with Phase 1 implementation plan (module specifications, ordering, acceptance criteria)
-- Minimal `createClient()` factory (scaffold — not yet functional)
+- `lib/client.js` — Core client pipeline (`createClient`):
+  configurable interceptor assembly, URL building with path param substitution
+  and query via URLSearchParams, auto-JSON body serialization, timeout via
+  `AbortSignal.timeout()` + `AbortSignal.any()`, response auto-parsing (JSON
+  for `application/json` and `+json`), automatic retry via interceptor pipeline,
+  per-request interceptor disable (`retry: false`, `conditional: false`),
+  ProblemDetailsError on 4xx/5xx
 - `stores/memory.js` — in-memory CacheStore with FIFO eviction (`createMemoryStore`)
 - `lib/problem-details.js` — RFC 9457 Problem Details parsing:
   - `ProblemDetailsError` class with standard fields and null-prototype extensions
