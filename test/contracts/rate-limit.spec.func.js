@@ -22,7 +22,8 @@ describe('[Contract] Rate Limiting — X-RateLimit-* Headers', () => {
   after(() => close());
 
   beforeEach(async () => {
-    await fetch(`${baseUrl}/rate-limited/reset`);
+    const res = await fetch(`${baseUrl}/rate-limited/reset`);
+    assert.equal(res.status, 204);
   });
 
   it('tracks rate limit state from response headers', async () => {
@@ -76,7 +77,8 @@ describe('[Contract] Rate Limiting — X-RateLimit-* Headers', () => {
       status: 429
     });
 
-    await fetch(`${baseUrl}/rate-limited/reset`);
+    const resetRes = await fetch(`${baseUrl}/rate-limited/reset`);
+    assert.equal(resetRes.status, 204);
 
     const recovered = await client.get('/rate-limited');
     assert.equal(recovered.status, 200);

@@ -22,7 +22,8 @@ describe('[Contract] Retry — Transient Failure Recovery', () => {
   after(() => close());
 
   beforeEach(async () => {
-    await fetch(`${baseUrl}/retry-once/reset`);
+    const res = await fetch(`${baseUrl}/retry-once/reset`);
+    assert.equal(res.status, 204);
   });
 
   it('retries 503 and succeeds on second attempt', async () => {

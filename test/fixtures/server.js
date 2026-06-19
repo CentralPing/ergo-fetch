@@ -73,12 +73,12 @@ function registerResourceRoutes(router) {
   router.put('/resource', (req, res) => {
     const ifMatch = req.headers['if-match'];
 
-    if (ifMatch && ifMatch !== currentEtag) {
+    if (!ifMatch || ifMatch !== currentEtag) {
       const problem = {
         type: 'https://httpstatuses.com/412',
         title: 'Precondition Failed',
         status: 412,
-        detail: 'ETag mismatch'
+        detail: !ifMatch ? 'Missing If-Match header' : 'ETag mismatch'
       };
       res.setHeader('content-type', 'application/problem+json');
       res.statusCode = 412;
@@ -145,7 +145,7 @@ function registerRateLimitRoutes(router) {
 }
 
 /**
- * GET /error/:status — returns RFC 9457 problem+json for any status code.
+ * GET|POST /error/:status — returns RFC 9457 problem+json for any status code.
  */
 function registerErrorRoutes(router) {
   /**

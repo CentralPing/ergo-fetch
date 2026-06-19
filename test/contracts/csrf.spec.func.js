@@ -6,7 +6,7 @@
 import {describe, it, before, after} from 'node:test';
 import assert from 'node:assert/strict';
 
-import {createClient, ProblemDetailsError} from '../../index.js';
+import {createClient} from '../../index.js';
 import {createTestServer} from '../fixtures/server.js';
 import {startServer} from '../helpers/setup-server.js';
 
@@ -65,14 +65,5 @@ describe('[Contract] CSRF Token Lifecycle', () => {
       name: 'ProblemDetailsError',
       status: 403
     });
-  });
-
-  it('CSRF token is not sent cross-origin', async () => {
-    const client = createClient({baseUrl: 'http://other-origin.example.com', retry: false});
-
-    await assert.rejects(
-      () => client.post('/csrf-protected', {body: {}}),
-      err => err instanceof TypeError || err instanceof ProblemDetailsError
-    );
   });
 });

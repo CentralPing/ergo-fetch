@@ -43,3 +43,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`createRetryInterceptor`): configurable backoff (exponential/linear) with
   AWS-style full jitter, Retry-After header override, per-request attempt
   tracking via WeakMap, idempotency-aware retry eligibility
+- Contract test infrastructure: 5 test suites (problem details, conditional
+  requests, rate limiting, CSRF lifecycle, retry semantics) validating all
+  Phase 1 interceptor behaviors against a real `@centralping/ergo-router` server
+
+### Fixed
+
+- `lib/client.js` — `csrfInterceptor` was missing from the response pipeline,
+  preventing Set-Cookie token extraction on safe-method responses

@@ -55,24 +55,15 @@ describe('[Contract] Conditional Requests — ETag / Last-Modified', () => {
   });
 
   it('PUT /resource with stale If-Match returns 412', async () => {
-    await client.get('/resource');
-    await client.put('/resource', {body: {name: 'First Update'}});
+    const writerA = createClient({baseUrl, retry: false});
+    const writerB = createClient({baseUrl, retry: false});
 
-    const staleClient = createClient({baseUrl, retry: false});
-    await staleClient.get('/resource');
+    await writerA.get('/resource');
+    await writerB.get('/resource');
 
-    await staleClient.put('/resource', {body: {name: 'Concurrent Update'}});
+    await writerA.put('/resource', {body: {name: 'Writer A Update'}});
 
-    const freshClient = createClient({baseUrl, retry: false});
-    await freshClient.get('/resource');
-    await freshClient.put('/resource', {body: {name: 'Another Update'}});
-
-    const conflictClient = createClient({baseUrl, retry: false});
-    await conflictClient.get('/resource');
-
-    await freshClient.put('/resource', {body: {name: 'Conflict Trigger'}});
-
-    await assert.rejects(() => conflictClient.put('/resource', {body: {name: 'Should Fail'}}), {
+    await assert.rejects(() => writerB.put('/resource', {body: {name: 'Writer B Stale'}}), {
       name: 'ProblemDetailsError',
       status: 412
     });
