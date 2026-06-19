@@ -64,34 +64,35 @@ describe('[Contract] Rate Limiting — X-RateLimit-* Headers', () => {
     }
   });
 
-  it('sets limited=true in state after 429', async () => {
-    const client = createClient({baseUrl, retry: false, rateLimit: {headerPrefix: 'x-ratelimit'}});
-
-    await client.get('/rate-limited');
-    await client.get('/rate-limited');
-    await client.get('/rate-limited');
-
-    try {
-      await client.get('/rate-limited');
-    } catch {
-      // Expected 429
-    }
-
-    const state = client.get('/rate-limited').catch(() => {});
-    await state;
-  });
-
-  it('response includes Retry-After header on 429', async () => {
+  it('rate limit state recovers after 429 and server window reset', async () => {
     const client = createClient({baseUrl, retry: false});
 
     await client.get('/rate-limited');
     await client.get('/rate-limited');
     await client.get('/rate-limited');
 
-    try {
-      await client.get('/rate-limited');
-    } catch (err) {
-      assert.equal(err.status, 429);
-    }
+    await assert.rejects(() => client.get('/rate-limited'), {
+      name: 'ProblemDetailsError',
+      status: 429
+    });
+
+    await fetch(`${baseUrl}/rate-limited/reset`);
+
+    const recovered = await client.get('/rate-limited');
+    assert.equal(recovered.status, 200);
+    assert.equal(recovered.rateLimit.limited, false);
+    assert.equal(recovered.rateLimit.remaining, 2);
+  });
+
+  it('server 429 response includes Retry-After header', async () => {
+    const client = createClient({baseUrl, retry: false});
+
+    await client.get('/rate-limited');
+    await client.get('/rate-limited');
+    await client.get('/rate-limited');
+
+    const raw = await fetch(`${baseUrl}/rate-limited`);
+    assert.equal(raw.status, 429);
+    assert.equal(raw.headers.get('retry-after'), '1');
   });
 });

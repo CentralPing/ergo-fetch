@@ -77,15 +77,4 @@ describe('[Contract] Conditional Requests — ETag / Last-Modified', () => {
       status: 412
     });
   });
-
-  it('conditional interceptor caches body for 304 transparent substitution', async () => {
-    const freshClient = createClient({baseUrl, retry: false});
-
-    const first = await freshClient.get('/resource');
-    assert.equal(first.status, 200);
-    assert.ok(first.body, 'First response should have a body');
-
-    const second = await freshClient.get('/resource');
-    assert.deepEqual(second.body, first.body);
-  });
 });

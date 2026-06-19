@@ -61,14 +61,15 @@ describe('[Contract] Retry — Transient Failure Recovery', () => {
   it('does not retry non-idempotent methods for 500', async () => {
     const client = createClient({
       baseUrl,
+      csrf: false,
       retry: {maxAttempts: 3, baseDelay: 0, jitter: 'none'}
     });
 
     const {rejects} = assert;
-    await rejects(
-      () => client.post('/csrf-protected', {body: {}, csrf: false}),
-      err => err.status === 403
-    );
+    await rejects(() => client.post('/error/500', {body: {}}), {
+      name: 'ProblemDetailsError',
+      status: 500
+    });
   });
 
   it('aborts on timeout before retry completes', async () => {

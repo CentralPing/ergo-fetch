@@ -148,7 +148,12 @@ function registerRateLimitRoutes(router) {
  * GET /error/:status — returns RFC 9457 problem+json for any status code.
  */
 function registerErrorRoutes(router) {
-  router.get('/error/:status', (req, res, params) => {
+  /**
+   * @param {import('node:http').IncomingMessage} req - Incoming request.
+   * @param {import('node:http').ServerResponse} res - Server response.
+   * @param {object} params - Route parameters.
+   */
+  function handleError(req, res, params) {
     const status = Number(params.status);
 
     if (!Number.isInteger(status) || status < 400 || status > 599) {
@@ -176,7 +181,10 @@ function registerErrorRoutes(router) {
     res.setHeader('content-type', 'application/problem+json');
     res.statusCode = status;
     res.end(JSON.stringify(problem));
-  });
+  }
+
+  router.get('/error/:status', handleError);
+  router.post('/error/:status', handleError);
 }
 
 /**
@@ -265,7 +273,8 @@ function registerRetryRoutes(router) {
 function registerTimeoutRoutes(router) {
   router.get('/timeout', (req, res) => {
     const url = new URL(req.url, 'http://localhost');
-    const ms = Number(url.searchParams.get('ms') ?? '5000');
+    const parsed = Number(url.searchParams.get('ms') ?? '5000');
+    const ms = Number.isFinite(parsed) && parsed >= 0 ? parsed : 5000;
 
     const timer = setTimeout(() => {
       res.setHeader('content-type', 'application/json');
