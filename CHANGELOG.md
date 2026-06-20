@@ -14,17 +14,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   IntelliSense and type-checking for all HTTP method helpers
 - Full README documentation: Quick Start, configuration reference, API reference
   with TypeScript examples, interceptor option tables, error handling guide
-
-### Changed
-
-- `createRequestIdInterceptor` and `createCsrfInterceptor` now validate `headerName`
-  options against the RFC 9110 `token` grammar at factory time, rejecting syntactically
-  invalid names (e.g., names with spaces, colons, or control characters) with a
-  descriptive `TypeError` instead of deferring to a less attributable runtime error
-  from `Headers.set()`
-
-### Added
-
 - All interceptor factories (`createRetryInterceptor`, `createRateLimitInterceptor`,
   `createCsrfInterceptor`, `createConditionalInterceptor`, `createRequestIdInterceptor`)
   now reject non-object options with `TypeError` instead of silently falling through
@@ -66,6 +55,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Contract test infrastructure: 5 test suites (problem details, conditional
   requests, rate limiting, CSRF lifecycle, retry semantics) validating all
   Phase 1 interceptor behaviors against a real `@centralping/ergo-router` server
+
+### Changed
+
+- `createRequestIdInterceptor` and `createCsrfInterceptor` now validate `headerName`
+  options against the RFC 9110 `token` grammar at factory time, rejecting syntactically
+  invalid names (e.g., names with spaces, colons, or control characters) with a
+  descriptive `TypeError` instead of deferring to a less attributable runtime error
+  from `Headers.set()`
 
 ### Fixed
 

@@ -54,7 +54,7 @@ const api = createClient({
   // Required
   baseUrl: 'https://api.example.com',
 
-  // Optional — all interceptors enabled by default
+  // Optional — most interceptors enabled by default (prefer is opt-in)
   timeout: 30000,            // Default request timeout (ms)
   headers: {'Accept': 'application/json'},
 
