@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- TypeScript declarations with strongly-typed `Client` interface — `createClient`
+  now returns `Readonly<Client>` instead of `object`, giving consumers full
+  IntelliSense and type-checking for all HTTP method helpers
+- Full README documentation: Quick Start, configuration reference, API reference
+  with TypeScript examples, interceptor option tables, error handling guide
+
 ### Changed
 
 - `createRequestIdInterceptor` and `createCsrfInterceptor` now validate `headerName`
