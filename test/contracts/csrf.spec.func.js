@@ -25,7 +25,8 @@ describe('[Contract] CSRF Token Lifecycle', () => {
 
     await assert.rejects(() => client.post('/csrf-protected', {body: {data: 'test'}}), {
       name: 'ProblemDetailsError',
-      status: 403
+      status: 403,
+      detail: 'Invalid or missing CSRF token'
     });
   });
 
@@ -63,7 +64,8 @@ describe('[Contract] CSRF Token Lifecycle', () => {
 
     await assert.rejects(() => clientB.post('/csrf-protected', {body: {}}), {
       name: 'ProblemDetailsError',
-      status: 403
+      status: 403,
+      detail: 'Invalid or missing CSRF token'
     });
   });
 });
