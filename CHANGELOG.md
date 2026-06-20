@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- `createRequestIdInterceptor` and `createCsrfInterceptor` now validate `headerName`
+  options against the RFC 9110 `token` grammar at factory time, rejecting syntactically
+  invalid names (e.g., names with spaces, colons, or control characters) with a
+  descriptive `TypeError` instead of deferring to a less attributable runtime error
+  from `Headers.set()`
+
 ### Added
 
 - Project scaffolding: package.json, ESLint, Prettier, TypeScript declarations, CI/CD workflows
