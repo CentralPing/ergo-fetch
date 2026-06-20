@@ -66,5 +66,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `lib/client.js` — Timeout signal is now created per retry attempt instead of
+  once before the retry loop. Retry delays (including `Retry-After` waits) no
+  longer consume timeout budget, ensuring each attempt gets a full timeout
+  window. User abort signals now cancel retry delay sleeps immediately instead
+  of waiting for the next `fetch()` call. (fixes #24)
 - `lib/client.js` — `csrfInterceptor` was missing from the response pipeline,
   preventing Set-Cookie token extraction on safe-method responses

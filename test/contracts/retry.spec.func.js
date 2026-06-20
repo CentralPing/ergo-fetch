@@ -96,6 +96,23 @@ describe('[Contract] Retry — Transient Failure Recovery', () => {
     });
   });
 
+  it('succeeds on second attempt after Retry-After delay with per-attempt timeout', async () => {
+    const resetRes = await fetch(`${baseUrl}/retry-after-delay/reset`);
+    assert.equal(resetRes.status, 204);
+
+    const client = createClient({
+      baseUrl,
+      timeout: 2000,
+      retry: {maxAttempts: 2, baseDelay: 0, jitter: 'none'}
+    });
+
+    const res = await client.get('/retry-after-delay', {query: {seconds: '1'}});
+
+    assert.equal(res.status, 200);
+    assert.equal(res.body.ok, true);
+    assert.equal(res.body.retried, true);
+  });
+
   it('retry with per-request retry disabled does not retry', async () => {
     const client = createClient({
       baseUrl,

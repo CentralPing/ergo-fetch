@@ -27,6 +27,7 @@ export function createTestServer() {
   registerErrorRoutes(router);
   registerCsrfRoutes(router);
   registerRetryRoutes(router);
+  registerRetryAfterDelayRoutes(router);
   registerTimeoutRoutes(router);
 
   return router;
@@ -281,6 +282,47 @@ function registerRetryRoutes(router) {
       };
       res.setHeader('content-type', 'application/problem+json');
       res.setHeader('retry-after', '0');
+      res.statusCode = 503;
+      res.end(JSON.stringify(problem));
+      return;
+    }
+
+    res.setHeader('content-type', 'application/json');
+    res.statusCode = 200;
+    res.end(JSON.stringify({ok: true, retried: true}));
+  });
+}
+
+/**
+ * GET /retry-after-delay — returns 503 with configurable Retry-After on first call, 200 on second.
+ * GET /retry-after-delay/reset — clears state (test utility).
+ * Query parameter ?seconds= sets the Retry-After value (default: 1).
+ */
+function registerRetryAfterDelayRoutes(router) {
+  const seen = new Set();
+
+  router.get('/retry-after-delay/reset', (req, res) => {
+    seen.clear();
+    res.statusCode = 204;
+    res.end();
+  });
+
+  router.get('/retry-after-delay', (req, res) => {
+    const requestId = req.headers['x-request-id'];
+    const key = requestId ?? 'anonymous';
+    const url = new URL(req.url, 'http://localhost');
+    const seconds = url.searchParams.get('seconds') ?? '1';
+
+    if (!seen.has(key)) {
+      seen.add(key);
+      const problem = {
+        type: 'https://httpstatuses.com/503',
+        title: 'Service Unavailable',
+        status: 503,
+        detail: 'Temporary failure — retry after delay'
+      };
+      res.setHeader('content-type', 'application/problem+json');
+      res.setHeader('retry-after', seconds);
       res.statusCode = 503;
       res.end(JSON.stringify(problem));
       return;
