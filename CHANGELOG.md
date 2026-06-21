@@ -66,5 +66,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `lib/retry.js` — `IDEMPOTENT_METHODS` now includes PUT and DELETE per
+  RFC 9110 section 9.2.2; PUT and DELETE requests receiving 500, 502, or 504
+  are now automatically retried without requiring `idempotent: true`
 - `lib/client.js` — `csrfInterceptor` was missing from the response pipeline,
   preventing Set-Cookie token extraction on safe-method responses

@@ -162,7 +162,7 @@ function registerRateLimitRoutes(router) {
 }
 
 /**
- * GET|POST /error/:status — returns RFC 9457 problem+json for any status code.
+ * GET|POST|PUT|DELETE /error/:status — returns RFC 9457 problem+json for any status code.
  */
 function registerErrorRoutes(router) {
   /** @type {Map<string, number>} */
@@ -210,6 +210,8 @@ function registerErrorRoutes(router) {
 
   router.get('/error/:status', handleError);
   router.post('/error/:status', handleError);
+  router.put('/error/:status', handleError);
+  router.delete('/error/:status', handleError);
 }
 
 /**
@@ -255,7 +257,7 @@ function registerCsrfRoutes(router) {
 }
 
 /**
- * GET /retry-once — returns 503 on first request per request-id, 200 on subsequent.
+ * GET|PUT|DELETE /retry-once — returns 503 on first request per request-id, 200 on subsequent.
  * GET /retry-once/reset — clears seen request-ids (test utility).
  */
 function registerRetryRoutes(router) {
@@ -267,7 +269,11 @@ function registerRetryRoutes(router) {
     res.end();
   });
 
-  router.get('/retry-once', (req, res) => {
+  /**
+   * @param {import('node:http').IncomingMessage} req - Incoming request.
+   * @param {import('node:http').ServerResponse} res - Server response.
+   */
+  function handleRetryOnce(req, res) {
     const requestId = req.headers['x-request-id'];
     const key = requestId ?? 'anonymous';
 
@@ -289,7 +295,11 @@ function registerRetryRoutes(router) {
     res.setHeader('content-type', 'application/json');
     res.statusCode = 200;
     res.end(JSON.stringify({ok: true, retried: true}));
-  });
+  }
+
+  router.get('/retry-once', handleRetryOnce);
+  router.put('/retry-once', handleRetryOnce);
+  router.delete('/retry-once', handleRetryOnce);
 }
 
 /**
