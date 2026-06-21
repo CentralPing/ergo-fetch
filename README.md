@@ -236,6 +236,8 @@ await api.post('/idempotent-op', {body: data, idempotent: true});
 
 ### Abort and Timeout
 
+The `timeout` option applies **per attempt**, not to the entire retry sequence. Each retry attempt gets a fresh timeout window — retry delays (including `Retry-After` waits) do not consume timeout budget. User abort signals cancel retry delay sleeps immediately.
+
 ```javascript
 // Per-request timeout (overrides client default)
 await api.get('/slow-endpoint', {timeout: 60000});
