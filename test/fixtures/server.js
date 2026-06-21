@@ -321,7 +321,10 @@ function registerRetryAfterDelayRoutes(router) {
     const requestId = req.headers['x-request-id'];
     const key = requestId ?? 'anonymous';
     const url = new URL(req.url, 'http://localhost');
-    const seconds = url.searchParams.get('seconds') ?? '1';
+    const rawSeconds = url.searchParams.get('seconds');
+    const parsedSeconds = Number(rawSeconds ?? '1');
+    const seconds =
+      Number.isInteger(parsedSeconds) && parsedSeconds >= 0 ? String(parsedSeconds) : '1';
 
     if (!seen.has(key)) {
       seen.add(key);
