@@ -66,6 +66,34 @@ describe('[Contract] Retry — Transient Failure Recovery', () => {
     );
   });
 
+  it('retries 503 for PUT and succeeds on second attempt', async () => {
+    const client = createClient({
+      baseUrl,
+      csrf: false,
+      retry: {maxAttempts: 3, baseDelay: 0, jitter: 'none'}
+    });
+
+    const res = await client.put('/retry-once', {body: {}});
+
+    assert.equal(res.status, 200);
+    assert.equal(res.body.ok, true);
+    assert.equal(res.body.retried, true);
+  });
+
+  it('retries 503 for DELETE and succeeds on second attempt', async () => {
+    const client = createClient({
+      baseUrl,
+      csrf: false,
+      retry: {maxAttempts: 3, baseDelay: 0, jitter: 'none'}
+    });
+
+    const res = await client.delete('/retry-once');
+
+    assert.equal(res.status, 200);
+    assert.equal(res.body.ok, true);
+    assert.equal(res.body.retried, true);
+  });
+
   it('does not retry non-idempotent methods for 500', async () => {
     const client = createClient({
       baseUrl,

@@ -39,7 +39,7 @@ console.log(user.body);   // parsed JSON body
 | **RFC 9457 Problem Details** | Structured error handling with classification (`isRetryable`, `isValidation`, `isAuth`) |
 | **Conditional requests (RFC 9110)** | Automatic ETag/Last-Modified caching with transparent 304 handling |
 | **Rate limit awareness** | Tracks `X-RateLimit-*` headers, auto-retries on 429 with Retry-After |
-| **Exponential backoff** | Retries transient failures (503, 429) with AWS-style full jitter |
+| **Exponential backoff** | Retries transient failures (503, 429) with AWS-style full jitter; retries 500/502/504 for idempotent methods (GET, HEAD, OPTIONS, PUT, DELETE) |
 | **CSRF lifecycle** | Extracts tokens from safe responses, injects on unsafe same-origin requests |
 | **Prefer header (RFC 7240)** | Declarative `return=minimal` / `return=representation` negotiation |
 | **Request-ID correlation** | Captures `X-Request-Id` from responses, optionally generates for requests |
@@ -230,7 +230,7 @@ await api.get('/always-fresh', {conditional: false});
 // Skip retry for non-idempotent mutation
 await api.post('/payments', {body: charge, retry: false});
 
-// Force retry eligibility on a POST
+// Force retry eligibility on a POST (PUT/DELETE are already idempotent per RFC 9110)
 await api.post('/idempotent-op', {body: data, idempotent: true});
 ```
 

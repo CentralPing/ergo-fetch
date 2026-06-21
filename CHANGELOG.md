@@ -71,5 +71,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   longer consume timeout budget, ensuring each attempt gets a full timeout
   window. User abort signals now cancel retry delay sleeps immediately instead
   of waiting for the next `fetch()` call. (fixes #24)
+- `lib/retry.js` — `IDEMPOTENT_METHODS` now includes PUT and DELETE per
+  RFC 9110 section 9.2.2; PUT and DELETE requests receiving 500, 502, or 504
+  are now automatically retried without requiring `idempotent: true`
 - `lib/client.js` — `csrfInterceptor` was missing from the response pipeline,
   preventing Set-Cookie token extraction on safe-method responses
