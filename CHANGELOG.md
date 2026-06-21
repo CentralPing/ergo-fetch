@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-beta.1] - 2026-06-21
+
 ### Added
 
 - TypeScript declarations with strongly-typed `Client` interface — `createClient`
@@ -19,7 +21,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   now reject non-object options with `TypeError` instead of silently falling through
   to defaults
 - Project scaffolding: package.json, ESLint, Prettier, TypeScript declarations, CI/CD workflows
-- DECISIONS.md with full architectural decisions from Lead Architect design session
 - PLAN.md with Phase 1 implementation plan (module specifications, ordering, acceptance criteria)
 - `lib/client.js` — Core client pipeline (`createClient`):
   configurable interceptor assembly, URL building with path param substitution
