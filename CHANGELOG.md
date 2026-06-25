@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `lib/pagination.js` — Async iterator-based paginator (`createPaginator`) with
+  offset and cursor strategies, Link header following, `X-Total-Count` parsing,
+  `maxPages` safety limit, and backpressure via on-demand page fetching
+
 ## [0.1.0-beta.1] - 2026-06-21
 
 ### Added
