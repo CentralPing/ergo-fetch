@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `lib/media-type.js` — Shared media-type parser (`parseMediaType`, `isJsonMediaType`) for
+  RFC-correct JSON Content-Type detection per RFC 9110 Section 8.4 and RFC 6838 Section 4.2.8
 - `lib/query-builder.js` — Immutable JSON:API query parameter builder
   (`createQueryBuilder`, `isQueryBuilder`) with structural validation,
   pagination strategy mutual exclusivity, JSON:API reserved namespace
@@ -17,6 +19,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `lib/pagination.js` — Async iterator-based paginator (`createPaginator`) with
   offset and cursor strategies, Link header following, `X-Total-Count` parsing,
   `maxPages` safety limit, and backpressure via on-demand page fetching
+
+### Fixed
+
+- `lib/client.js` and `lib/conditional.js` now use parsed media-type matching
+  (`parseMediaType` + allowlist) instead of substring `includes()` for JSON
+  Content-Type detection — eliminates false positives from `json` appearing in
+  parameters or unrelated subtype positions
 
 ## [0.1.0-beta.1] - 2026-06-21
 

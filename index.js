@@ -19,3 +19,4 @@ export {createCsrfInterceptor} from './lib/csrf.js';
 export {createConditionalInterceptor} from './lib/conditional.js';
 export {createRateLimitInterceptor, parseRetryAfter} from './lib/rate-limit.js';
 export {createRetryInterceptor} from './lib/retry.js';
+export {parseMediaType, isJsonMediaType} from './lib/media-type.js';
