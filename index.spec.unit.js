@@ -24,7 +24,9 @@ describe('@centralping/ergo-fetch public exports', () => {
     'createConditionalInterceptor',
     'createRateLimitInterceptor',
     'parseRetryAfter',
-    'createRetryInterceptor'
+    'createRetryInterceptor',
+    'parseMediaType',
+    'isJsonMediaType'
   ];
 
   for (const name of expectedExports) {
