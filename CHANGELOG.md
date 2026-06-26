@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `lib/query-builder.js` — Immutable JSON:API query parameter builder
+  (`createQueryBuilder`, `isQueryBuilder`) with structural validation,
+  pagination strategy mutual exclusivity, JSON:API reserved namespace
+  enforcement, bracket notation serialization, and duck-type detection via
+  `Symbol.for('ergo-fetch:query-builder')`
 - `lib/pagination.js` — Async iterator-based paginator (`createPaginator`) with
   offset and cursor strategies, Link header following, `X-Total-Count` parsing,
   `maxPages` safety limit, and backpressure via on-demand page fetching
