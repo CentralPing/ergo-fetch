@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `lib/assert-path-absolute.js` — Shared RFC 3986 `path-absolute` validator
+  (`isPathAbsolute`, `assertPathAbsolute`) extracted from `query-builder.js`,
+  used by `client.js`, `pagination.js`, and `query-builder.js` for unified path
+  validation via character-by-character allowlist scanning
 - `lib/query-builder.js` — Immutable JSON:API query parameter builder
   (`createQueryBuilder`, `isQueryBuilder`) with structural validation,
   pagination strategy mutual exclusivity, JSON:API reserved namespace
@@ -17,6 +21,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `lib/pagination.js` — Async iterator-based paginator (`createPaginator`) with
   offset and cursor strategies, Link header following, `X-Total-Count` parsing,
   `maxPages` safety limit, and backpressure via on-demand page fetching
+
+### Changed
+
+- `lib/client.js` — Path validation upgraded from `startsWith('/')` denylist to
+  RFC 3986 `path-absolute` allowlist via `assertPathAbsolute`; now rejects
+  backslashes, control characters, non-ASCII, and `//` authority escapes
+- `lib/pagination.js` — Path validation upgraded from dual-prefix denylist to
+  RFC 3986 `path-absolute` allowlist; Link `rel="next"` href fallback branch now
+  validates the path portion with `isPathAbsolute` instead of prefix checks
+- `lib/query-builder.js` — Path validation functions (`isHexDigit`,
+  `isValidPathCode`, `isValidBasePath`) extracted to shared
+  `lib/assert-path-absolute.js`; behavior is unchanged
 
 ## [0.1.0-beta.1] - 2026-06-21
 
