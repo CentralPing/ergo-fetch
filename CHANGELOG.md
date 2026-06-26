@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `lib/rate-limit.js` — `parseRetryAfter` now validates HTTP-date values against
+  IMF-fixdate grammar (RFC 9110 §5.6.7) instead of accepting any string
+  `Date.parse` can interpret. Non-IMF date formats (ISO 8601, RFC 850, asctime,
+  locale strings) are now correctly rejected. (fixes #45)
+
 ### Added
 
 - `lib/query-builder.js` — Immutable JSON:API query parameter builder
