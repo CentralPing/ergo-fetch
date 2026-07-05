@@ -513,6 +513,40 @@ describe('createWebStorageStore', () => {
       assert.ok(result.body.startsWith('z'));
     });
 
+    it('retries setItem after evicting an entry on QuotaExceededError', async () => {
+      const storage = createMockStorage({quota: 200});
+      const store = createWebStorageStore({storage, maxEntries: 50});
+
+      await store.set('a', {body: 'x'.repeat(50)});
+      await store.set('b', {body: 'y'.repeat(50)});
+      await store.set('c', {body: 'z'.repeat(50)});
+
+      assert.equal(await store.get('a'), undefined);
+      assert.deepStrictEqual(await store.get('c'), entry({body: 'z'.repeat(50)}));
+    });
+
+    it('silently stops retry on non-QuotaExceeded error during recovery', async () => {
+      const storage = createMockStorage();
+      const store = createWebStorageStore({storage, maxEntries: 50});
+
+      await store.set('a', {etag: '"v1"'});
+
+      const originalSetItem = storage.setItem.bind(storage);
+      let setCallCount = 0;
+      storage.setItem = function setItemStub() {
+        setCallCount++;
+        if (setCallCount === 1) {
+          throw new DOMException('Quota exceeded', 'QuotaExceededError');
+        }
+        throw new DOMException('Disk error', 'UnknownError');
+      };
+
+      await store.set('b', {etag: '"v2"'});
+
+      storage.setItem = originalSetItem;
+      assert.equal(await store.get('b'), undefined);
+    });
+
     it('silently drops the entry when eviction cannot free enough space', async () => {
       const storage = createMockStorage({quota: 50});
       const store = createWebStorageStore({storage, maxEntries: 50});
