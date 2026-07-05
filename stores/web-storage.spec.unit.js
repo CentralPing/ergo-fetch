@@ -615,4 +615,72 @@ describe('createWebStorageStore', () => {
       assert.equal('lastModified' in result, false);
     });
   });
+
+  describe('runtime storage errors (post-probe)', () => {
+    it('get returns undefined when backend throws after probe', async () => {
+      const storage = createMockStorage();
+      const store = createWebStorageStore({storage});
+      await store.set('key', {etag: '"v1"'});
+
+      const originalGetItem = storage.getItem.bind(storage);
+      storage.getItem = () => {
+        throw new DOMException('Disk error', 'UnknownError');
+      };
+
+      const result = await store.get('key');
+      assert.equal(result, undefined);
+
+      storage.getItem = originalGetItem;
+    });
+
+    it('delete returns false when storage throws after probe', async () => {
+      const storage = createMockStorage();
+      const store = createWebStorageStore({storage});
+      await store.set('key', {etag: '"v1"'});
+
+      const originalGetItem = storage.getItem.bind(storage);
+      storage.getItem = () => {
+        throw new DOMException('Disk error', 'UnknownError');
+      };
+
+      const result = await store.delete('key');
+      assert.equal(result, false);
+
+      storage.getItem = originalGetItem;
+    });
+
+    it('clear resolves when storage throws during enumeration', async () => {
+      const storage = createMockStorage();
+      const store = createWebStorageStore({storage});
+      await store.set('key', {etag: '"v1"'});
+
+      const originalLength = Object.getOwnPropertyDescriptor(storage, 'length');
+      Object.defineProperty(storage, 'length', {
+        get() {
+          throw new DOMException('Disk error', 'UnknownError');
+        },
+        configurable: true
+      });
+
+      const result = await store.clear();
+      assert.equal(result, undefined);
+
+      if (originalLength) {
+        Object.defineProperty(storage, 'length', originalLength);
+      }
+    });
+
+    it('eviction removes malformed entries encountered during scan', async () => {
+      const storage = createMockStorage();
+      const store = createWebStorageStore({storage, maxEntries: 2});
+
+      await store.set('good', {etag: '"v1"'});
+      storage.setItem('ergo-fetch:corrupt', 'not-valid-json{{{');
+
+      await store.set('new', {etag: '"v2"'});
+
+      assert.equal(storage.getItem('ergo-fetch:corrupt'), null);
+      assert.deepStrictEqual(await store.get('new'), entry({etag: '"v2"'}));
+    });
+  });
 });
