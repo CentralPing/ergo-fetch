@@ -275,6 +275,31 @@ const api = createClient({
 });
 ```
 
+### Web Storage Store
+
+Durable cache store backed by `localStorage` or `sessionStorage` that survives
+page reloads:
+
+```javascript
+import {createWebStorageStore} from '@centralping/ergo-fetch/stores/web-storage';
+import {createClient} from '@centralping/ergo-fetch';
+
+const store = createWebStorageStore({
+  storage: localStorage,       // or sessionStorage (default: localStorage)
+  prefix: 'my-app:',           // namespace prefix (default: 'ergo-fetch:')
+  maxEntries: 200              // oldest entries evicted when exceeded (default: 100)
+});
+
+const api = createClient({
+  baseUrl: 'https://api.example.com',
+  conditional: {store}
+});
+```
+
+If the storage backend is inaccessible (e.g., `SecurityError` in private
+browsing mode), the factory returns a no-op store that silently ignores all
+operations.
+
 ## TypeScript
 
 Full TypeScript declarations are included. Import types directly:

@@ -36,7 +36,7 @@ const DEFAULT_PREFIX = 'ergo-fetch:';
  * @typedef {object} WebStorageStoreOptions
  * @property {Storage} [storage] - Web Storage backend (default: localStorage).
  * @property {string} [prefix] - Key prefix for namespacing (default: 'ergo-fetch:').
- * @property {number} [maxEntries] - Maximum entries before LRU eviction (default: 100).
+ * @property {number} [maxEntries] - Maximum entries before oldest-entry eviction (default: 100).
  */
 
 /**
@@ -146,8 +146,8 @@ function createNoOpStore() {
  * Creates a CacheStore backed by the Web Storage API (localStorage or sessionStorage).
  *
  * Provides durable conditional request caching that survives page reloads.
- * When the store exceeds `maxEntries`, the oldest entry (by timestamp) is
- * evicted before the new entry is stored (LRU eviction).
+ * When the store exceeds `maxEntries`, the oldest entry (by write timestamp)
+ * is evicted before the new entry is stored.
  *
  * If the storage backend throws `SecurityError` (e.g., private browsing mode
  * blocks storage access), a no-op store is returned that silently ignores all
@@ -155,7 +155,7 @@ function createNoOpStore() {
  *
  * @param {WebStorageStoreOptions} [options] - Store configuration.
  * @returns {CacheStore} - Async cache store instance.
- * @throws {TypeError} When maxEntries is not a positive integer or prefix is not a string.
+ * @throws {TypeError} When maxEntries is not a positive integer or prefix is not a non-empty string.
  */
 export function createWebStorageStore(options) {
   const maxEntries = options?.maxEntries ?? DEFAULT_MAX_ENTRIES;
@@ -166,8 +166,8 @@ export function createWebStorageStore(options) {
     throw new TypeError(`maxEntries must be a positive integer, got ${maxEntries}`);
   }
 
-  if (typeof prefix !== 'string') {
-    throw new TypeError(`prefix must be a string, got ${typeof prefix}`);
+  if (typeof prefix !== 'string' || prefix.length === 0) {
+    throw new TypeError(`prefix must be a non-empty string, got ${JSON.stringify(prefix)}`);
   }
 
   if (storage !== undefined && (typeof storage !== 'object' || storage === null)) {

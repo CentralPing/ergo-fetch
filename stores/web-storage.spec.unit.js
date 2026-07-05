@@ -153,7 +153,15 @@ describe('createWebStorageStore', () => {
       const storage = createMockStorage();
       assert.throws(() => createWebStorageStore({storage, prefix: 123}), {
         name: 'TypeError',
-        message: /prefix must be a string/
+        message: /prefix must be a non-empty string/
+      });
+    });
+
+    it('throws TypeError for empty string prefix', () => {
+      const storage = createMockStorage();
+      assert.throws(() => createWebStorageStore({storage, prefix: ''}), {
+        name: 'TypeError',
+        message: /prefix must be a non-empty string/
       });
     });
 
@@ -402,7 +410,7 @@ describe('createWebStorageStore', () => {
     });
   });
 
-  describe('LRU eviction', () => {
+  describe('oldest-entry eviction', () => {
     it('evicts the oldest entry when maxEntries is exceeded', async () => {
       const storage = createMockStorage();
       const store = createWebStorageStore({storage, maxEntries: 2});
@@ -440,7 +448,7 @@ describe('createWebStorageStore', () => {
       assert.deepStrictEqual(await store.get('replacement'), entry({etag: '"2"'}));
     });
 
-    it('evicts entries in LRU order (oldest timestamp first)', async () => {
+    it('evicts multiple entries in oldest-first order', async () => {
       const storage = createMockStorage();
       const store = createWebStorageStore({storage, maxEntries: 3});
 
@@ -457,6 +465,24 @@ describe('createWebStorageStore', () => {
       assert.deepStrictEqual(await store.get('e'), entry({body: 5}));
     });
 
+    it('evicts by timestamp, not insertion order', async () => {
+      const storage = createMockStorage();
+      const prefix = 'ergo-fetch:';
+
+      storage.setItem(`${prefix}old`, JSON.stringify({etag: '"old"', timestamp: 1000}));
+      storage.setItem(`${prefix}newer`, JSON.stringify({etag: '"newer"', timestamp: 3000}));
+      storage.setItem(`${prefix}middle`, JSON.stringify({etag: '"middle"', timestamp: 2000}));
+
+      const store = createWebStorageStore({storage, maxEntries: 3});
+
+      await store.set('added', {etag: '"added"'});
+
+      assert.equal(await store.get('old'), undefined);
+      assert.deepStrictEqual(await store.get('newer'), entry({etag: '"newer"'}));
+      assert.deepStrictEqual(await store.get('middle'), entry({etag: '"middle"'}));
+      assert.deepStrictEqual(await store.get('added'), entry({etag: '"added"'}));
+    });
+
     it('only counts entries with the matching prefix', async () => {
       const storage = createMockStorage();
       storage.setItem('other:unrelated', 'data');
@@ -464,9 +490,11 @@ describe('createWebStorageStore', () => {
 
       await store.set('a', {etag: '"1"'});
       await store.set('b', {etag: '"2"'});
+      await store.set('c', {etag: '"3"'});
 
-      assert.deepStrictEqual(await store.get('a'), entry({etag: '"1"'}));
+      assert.equal(await store.get('a'), undefined);
       assert.deepStrictEqual(await store.get('b'), entry({etag: '"2"'}));
+      assert.deepStrictEqual(await store.get('c'), entry({etag: '"3"'}));
       assert.equal(storage.getItem('other:unrelated'), 'data');
     });
   });

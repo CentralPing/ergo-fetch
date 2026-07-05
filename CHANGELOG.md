@@ -17,6 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `lib/pagination.js` — Async iterator-based paginator (`createPaginator`) with
   offset and cursor strategies, Link header following, `X-Total-Count` parsing,
   `maxPages` safety limit, and backpressure via on-demand page fetching
+- `stores/web-storage.js` — Web Storage cache store adapter
+  (`createWebStorageStore`) backed by `localStorage` or `sessionStorage` for
+  durable conditional request caching that survives page reloads, with
+  oldest-entry eviction by write timestamp, `QuotaExceededError` recovery,
+  `SecurityError` fallback to a no-op store, namespace isolation via
+  configurable prefix, and null-prototype deserialization
 
 ## [0.1.0-beta.1] - 2026-06-21
 
