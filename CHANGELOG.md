@@ -22,7 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `crypto.randomUUID()` for configured methods, per-request control via
   `ctx.idempotent` and `ctx.idempotencyKey`, WeakMap-based key preservation
   across retries, SHA-256 body fingerprinting to detect accidental key reuse
-  with different content, TTL-based lazy eviction of registry entries
+  with different content, TTL-based lazy eviction of registry entries,
+  `maxEntries` capacity bound (default: 1024) with FIFO eviction to prevent
+  unbounded memory growth under sustained failure traffic
 
 ## [0.1.0-beta.1] - 2026-06-21
 
