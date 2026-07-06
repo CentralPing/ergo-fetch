@@ -23,6 +23,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `ctx.idempotent` and `ctx.idempotencyKey`, WeakMap-based key preservation
   across retries, SHA-256 body fingerprinting to detect accidental key reuse
   with different content, TTL-based lazy eviction of registry entries
+- `stores/web-storage.js` — Web Storage cache store adapter
+  (`createWebStorageStore`) backed by `localStorage` or `sessionStorage` for
+  durable conditional request caching that survives page reloads, with
+  oldest-entry eviction by write timestamp, `QuotaExceededError` recovery,
+  `SecurityError` fallback to a no-op store, namespace isolation via
+  configurable prefix, and null-prototype deserialization
 
 ## [0.1.0-beta.1] - 2026-06-21
 
