@@ -337,6 +337,34 @@ describe('createWebStorageStore', () => {
       assert.equal(typeof raw.timestamp, 'number');
       assert.ok(raw.timestamp > 0);
     });
+
+    it('throws TypeError for null entry', () => {
+      assert.throws(() => store.set('key', null), {
+        name: 'TypeError',
+        message: /entry must be an object, got null/
+      });
+    });
+
+    it('throws TypeError for undefined entry', () => {
+      assert.throws(() => store.set('key', undefined), {
+        name: 'TypeError',
+        message: /entry must be an object, got undefined/
+      });
+    });
+
+    it('throws TypeError for string entry', () => {
+      assert.throws(() => store.set('key', 'bad'), {
+        name: 'TypeError',
+        message: /entry must be an object, got string/
+      });
+    });
+
+    it('throws TypeError for numeric entry', () => {
+      assert.throws(() => store.set('key', 42), {
+        name: 'TypeError',
+        message: /entry must be an object, got number/
+      });
+    });
   });
 
   describe('delete', () => {

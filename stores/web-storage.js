@@ -218,6 +218,10 @@ export function createWebStorageStore(options) {
    * @returns {Promise<void>}
    */
   store.set = function set(key, entry) {
+    if (entry === null || typeof entry !== 'object') {
+      throw new TypeError(`entry must be an object, got ${entry === null ? 'null' : typeof entry}`);
+    }
+
     const storageKey = `${prefix}${key}`;
     const value = JSON.stringify({
       etag: entry.etag,
