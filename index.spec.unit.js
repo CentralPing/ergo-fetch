@@ -18,13 +18,19 @@ describe('@centralping/ergo-fetch public exports', () => {
     'isValidation',
     'isAuth',
     'createMemoryStore',
+    'createWebStorageStore',
     'createRequestIdInterceptor',
     'createPreferInterceptor',
     'createCsrfInterceptor',
     'createConditionalInterceptor',
     'createRateLimitInterceptor',
     'parseRetryAfter',
-    'createRetryInterceptor'
+    'createRetryInterceptor',
+    'createIdempotencyInterceptor',
+    'parseLinkHeader',
+    'createPaginator',
+    'createQueryBuilder',
+    'isQueryBuilder'
   ];
 
   for (const name of expectedExports) {
