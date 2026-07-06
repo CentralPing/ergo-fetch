@@ -29,6 +29,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   oldest-entry eviction by write timestamp, `QuotaExceededError` recovery,
   `SecurityError` fallback to a no-op store, namespace isolation via
   configurable prefix, and null-prototype deserialization
+- `lib/client.js` — Phase 2 client integration: `client.paginate()` async
+  iterator method, `client.paginateAll()` convenience method that flattens all
+  pages into a single array, `client.query()` factory returning immutable
+  `QueryBuilder` instances, `idempotency` client config option for automatic
+  idempotency-key interceptor assembly, `idempotencyKey` per-request option,
+  and `options.query` accepts `QueryBuilder` instances (auto-serialized via
+  `toString()`)
+- `index.js` — Public re-exports for `createWebStorageStore`,
+  `createIdempotencyInterceptor`, `parseLinkHeader`, `createPaginator`,
+  `createQueryBuilder`, and `isQueryBuilder`
 
 ## [0.1.0-beta.1] - 2026-06-21
 
