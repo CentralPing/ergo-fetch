@@ -338,32 +338,36 @@ describe('createWebStorageStore', () => {
       assert.ok(raw.timestamp > 0);
     });
 
-    it('throws TypeError for null entry', () => {
+    it('throws TypeError for null entry without writing to storage', () => {
       assert.throws(() => store.set('key', null), {
         name: 'TypeError',
         message: /entry must be an object, got null/
       });
+      assert.equal(storage.getItem('ergo-fetch:key'), null);
     });
 
-    it('throws TypeError for undefined entry', () => {
+    it('throws TypeError for undefined entry without writing to storage', () => {
       assert.throws(() => store.set('key', undefined), {
         name: 'TypeError',
         message: /entry must be an object, got undefined/
       });
+      assert.equal(storage.getItem('ergo-fetch:key'), null);
     });
 
-    it('throws TypeError for string entry', () => {
+    it('throws TypeError for string entry without writing to storage', () => {
       assert.throws(() => store.set('key', 'bad'), {
         name: 'TypeError',
         message: /entry must be an object, got string/
       });
+      assert.equal(storage.getItem('ergo-fetch:key'), null);
     });
 
-    it('throws TypeError for numeric entry', () => {
+    it('throws TypeError for numeric entry without writing to storage', () => {
       assert.throws(() => store.set('key', 42), {
         name: 'TypeError',
         message: /entry must be an object, got number/
       });
+      assert.equal(storage.getItem('ergo-fetch:key'), null);
     });
   });
 
@@ -497,16 +501,16 @@ describe('createWebStorageStore', () => {
       const storage = createMockStorage();
       const prefix = 'ergo-fetch:';
 
-      storage.setItem(`${prefix}old`, JSON.stringify({etag: '"old"', timestamp: 1000}));
-      storage.setItem(`${prefix}newer`, JSON.stringify({etag: '"newer"', timestamp: 3000}));
+      storage.setItem(`${prefix}newest`, JSON.stringify({etag: '"newest"', timestamp: 3000}));
+      storage.setItem(`${prefix}oldest`, JSON.stringify({etag: '"oldest"', timestamp: 1000}));
       storage.setItem(`${prefix}middle`, JSON.stringify({etag: '"middle"', timestamp: 2000}));
 
       const store = createWebStorageStore({storage, maxEntries: 3});
 
       await store.set('added', {etag: '"added"'});
 
-      assert.equal(await store.get('old'), undefined);
-      assert.deepStrictEqual(await store.get('newer'), entry({etag: '"newer"'}));
+      assert.deepStrictEqual(await store.get('newest'), entry({etag: '"newest"'}));
+      assert.equal(await store.get('oldest'), undefined);
       assert.deepStrictEqual(await store.get('middle'), entry({etag: '"middle"'}));
       assert.deepStrictEqual(await store.get('added'), entry({etag: '"added"'}));
     });
