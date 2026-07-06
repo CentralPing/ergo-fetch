@@ -17,6 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `lib/pagination.js` — Async iterator-based paginator (`createPaginator`) with
   offset and cursor strategies, Link header following, `X-Total-Count` parsing,
   `maxPages` safety limit, and backpressure via on-demand page fetching
+- `lib/idempotency.js` — Idempotency-Key interceptor
+  (`createIdempotencyInterceptor`): automatic key generation via
+  `crypto.randomUUID()` for configured methods, per-request control via
+  `ctx.idempotent` and `ctx.idempotencyKey`, WeakMap-based key preservation
+  across retries, SHA-256 body fingerprinting to detect accidental key reuse
+  with different content, TTL-based lazy eviction of registry entries
 - `stores/web-storage.js` — Web Storage cache store adapter
   (`createWebStorageStore`) backed by `localStorage` or `sessionStorage` for
   durable conditional request caching that survives page reloads, with
