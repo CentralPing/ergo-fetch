@@ -447,6 +447,7 @@ function registerIdempotencyRoutes(router) {
     const key = req.headers['idempotency-key'];
 
     if (!key) {
+      req.resume();
       res.setHeader('content-type', 'application/problem+json');
       res.statusCode = 400;
       res.end(
@@ -463,6 +464,9 @@ function registerIdempotencyRoutes(router) {
     let body = '';
     req.on('data', chunk => {
       body += chunk;
+    });
+    req.on('error', () => {
+      res.destroy();
     });
     req.on('end', () => {
       const existing = seen.get(key);
@@ -516,6 +520,9 @@ function registerIdempotencyRoutes(router) {
     }
 
     req.resume();
+    req.on('error', () => {
+      res.destroy();
+    });
     req.on('end', () => {
       if (!retrySeen.has(key)) {
         retrySeen.add(key);
