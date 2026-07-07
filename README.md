@@ -43,6 +43,9 @@ console.log(user.body); // parsed JSON body
 | **CSRF lifecycle**                  | Extracts tokens from safe responses, injects on unsafe same-origin requests                                                                         |
 | **Prefer header (RFC 7240)**        | Declarative `return=minimal` / `return=representation` negotiation                                                                                  |
 | **Request-ID correlation**          | Captures `X-Request-Id` from responses, optionally generates for requests                                                                           |
+| **Pagination (RFC 8288)**           | Async iteration over paginated responses with Link header following, offset and cursor strategies                                                    |
+| **JSON:API Query Builder**          | Immutable query parameter construction with structural validation and bracket notation                                                               |
+| **Idempotency-Key**                 | Automatic key generation for safe mutation retry with body fingerprinting                                                                            |
 | **Fail-fast validation**            | Invalid inputs throw synchronously before any network call                                                                                          |
 
 ## Configuration
@@ -64,7 +67,8 @@ const api = createClient({
   csrf: true,
   conditional: true,
   rateLimit: {proactive: true, threshold: 10},
-  retry: {maxAttempts: 3, backoff: 'exponential', jitter: 'full'}
+  retry: {maxAttempts: 3, backoff: 'exponential', jitter: 'full'},
+  idempotency: true // or {headerName, methods, generator, ttl}
 });
 ```
 
@@ -111,6 +115,15 @@ const api = createClient({
 | `backoff`     | `'exponential' \| 'linear'` | `'exponential'` | Backoff strategy                       |
 | `jitter`      | `'full' \| 'none'`          | `'full'`        | AWS-style full jitter or deterministic |
 
+#### `idempotency`
+
+| Option       | Type         | Default              | Description                              |
+| ------------ | ------------ | -------------------- | ---------------------------------------- |
+| `headerName` | `string`     | `'idempotency-key'`  | Header name for the idempotency key      |
+| `methods`    | `string[]`   | `['POST']`           | HTTP methods receiving auto-generated keys |
+| `generator`  | `() => string` | `crypto.randomUUID` | Custom key generator function            |
+| `ttl`        | `number`     | `300000`             | TTL for stored keys in milliseconds      |
+
 ## API Reference
 
 ### `createClient(config)`
@@ -145,12 +158,13 @@ interface RequestOptions {
   headers?: object | Headers; // Per-request headers (merged with defaults)
   body?: any; // Auto-serialized to JSON for plain objects
   params?: object; // URL path parameters (:key substitution)
-  query?: object; // URL query parameters via URLSearchParams
+  query?: object | QueryBuilder; // URLSearchParams or QueryBuilder (auto-serialized)
   signal?: AbortSignal; // User abort signal
   timeout?: number; // Per-request timeout (ms)
   retry?: boolean; // Set false to disable retry
   conditional?: boolean; // Set false to disable conditional headers
   idempotent?: boolean; // Override idempotency for retry eligibility
+  idempotencyKey?: string; // Explicit idempotency key for this request
 }
 ```
 
@@ -260,6 +274,151 @@ setTimeout(() => controller.abort(), 5000);
 await api.get('/stream', {signal: controller.signal});
 ```
 
+### Pagination
+
+Iterate over paginated API responses with automatic Link header following:
+
+```javascript
+// Async iteration over pages
+for await (const page of api.paginate('/users', {perPage: 25})) {
+  console.log(page.data);       // parsed response body
+  console.log(page.meta.page);  // current page number (1-indexed)
+  console.log(page.meta.total); // total items (from X-Total-Count header)
+  console.log(page.done);       // true on the last page
+}
+
+// Collect all data into a flattened array
+const allUsers = await api.paginateAll('/users', {perPage: 50, maxPages: 10});
+```
+
+#### `client.paginate(path, options?)`
+
+Returns a frozen async iterable that yields `Page` objects. Follows RFC 8288 `Link` headers with `rel="next"` for page discovery.
+
+#### `client.paginateAll(path, options?)`
+
+Convenience method that collects all pages and returns a flattened `Array` of response body data.
+
+#### Paginator Options
+
+| Option    | Type                    | Default      | Description                                     |
+| --------- | ----------------------- | ------------ | ----------------------------------------------- |
+| `strategy` | `'offset' \| 'cursor'` | `'offset'`   | Pagination strategy                             |
+| `page`    | `number`                | `1`          | Starting page number (offset strategy)          |
+| `perPage` | `number`                | `20`         | Items per page (offset strategy)                |
+| `limit`   | `number`                | `20`         | Items per request (cursor strategy)             |
+| `maxPages` | `number`               | `Infinity`   | Maximum pages to fetch before stopping          |
+| `query`   | `object`                | —            | Additional query parameters for the request     |
+| `headers` | `object \| Headers`     | —            | Additional headers for each request             |
+| `signal`  | `AbortSignal`           | —            | Abort signal for cancellation                   |
+
+#### Page Object
+
+```typescript
+interface Page {
+  data: any;               // Parsed response body for this page
+  meta: {
+    page: number;          // Current page number (1-indexed)
+    total?: number;        // Total item count (from X-Total-Count header)
+  };
+  links: Map<string, LinkObject>; // Parsed Link header relations
+  done: boolean;           // True when no next link or maxPages reached
+}
+```
+
+#### Standalone Export
+
+```javascript
+import {createPaginator} from '@centralping/ergo-fetch';
+
+const paginator = createPaginator(client, '/users', {perPage: 25});
+for await (const page of paginator) { /* ... */ }
+```
+
+### Query Builder
+
+Build JSON:API query parameters with an immutable fluent API:
+
+```javascript
+// Via client method
+const q = api.query('/articles')
+  .fields('articles', ['title', 'body'])
+  .include(['author', 'comments'])
+  .filter({status: 'published'})
+  .sort(['-createdAt'])
+  .page({number: 1, size: 20});
+
+const result = await q.fetch(api);
+```
+
+Every method returns a new builder — the original is never modified.
+
+#### `client.query(path?)`
+
+Creates a `QueryBuilder` instance. When `path` is provided, the builder can execute requests via `.fetch(client)`.
+
+#### Fluent API Methods
+
+| Method                                       | Description                                                  |
+| -------------------------------------------- | ------------------------------------------------------------ |
+| `.fields(type, fieldNames)`                  | Sets sparse fieldsets for a resource type (`fields[type]`)   |
+| `.include(paths)`                            | Sets relationship paths to include (`include=a,b`)           |
+| `.filter(criteria)`                          | Merges filter criteria (`filter[key]=value`)                 |
+| `.sort(fields)`                              | Sets sort fields, prefix with `-` for descending (`sort=a,-b`) |
+| `.page(params)`                              | Sets pagination parameters (`page[key]=value`)               |
+| `.param(key, value)`                         | Adds a custom query parameter (non-reserved names only)      |
+| `.toString()`                                | Serializes to a query string (no leading `?`)                |
+| `.fetch(client)`                             | Executes the query via the client's `get` method             |
+
+#### Using QueryBuilder with Request Options
+
+Pass a `QueryBuilder` as the `query` option on any request — it is automatically serialized:
+
+```javascript
+const q = api.query()
+  .filter({active: true})
+  .sort(['-name']);
+
+await api.get('/users', {query: q});
+```
+
+#### Standalone Exports
+
+```javascript
+import {createQueryBuilder, isQueryBuilder} from '@centralping/ergo-fetch';
+
+const q = createQueryBuilder('/articles')
+  .fields('articles', ['title'])
+  .filter({status: 'draft'});
+
+console.log(q.toString());
+// → fields[articles]=title&filter[status]=draft
+
+isQueryBuilder(q); // true
+```
+
+### Idempotency Key
+
+Automatically generates idempotency keys for configured HTTP methods (default: POST). Keys are preserved across retries so the server can safely deduplicate mutations.
+
+```javascript
+const api = createClient({
+  baseUrl: 'https://api.example.com',
+  idempotency: true // auto-generate keys for POST requests
+});
+
+// Key is generated and sent via the Idempotency-Key header
+await api.post('/payments', {body: {amount: 1000}});
+
+// Explicit key for a specific request
+await api.post('/payments', {
+  body: {amount: 1000},
+  idempotencyKey: 'payment-abc-123'
+});
+```
+
+When an explicit `idempotencyKey` is reused while a prior request with the same key is tracked, the interceptor compares SHA-256 body fingerprints. A mismatch throws `TypeError` — preventing accidental reuse of a key with different content.
+
 ### Memory Store
 
 Custom cache store for the conditional interceptor:
@@ -315,6 +474,9 @@ import type {
 import type {CacheStore, CacheEntry} from '@centralping/ergo-fetch/stores/memory';
 import type {RateLimitState} from '@centralping/ergo-fetch/lib/rate-limit';
 import type {RetryInterceptorOptions} from '@centralping/ergo-fetch/lib/retry';
+import type {Paginator, PaginatorOptions, Page, PageMeta} from '@centralping/ergo-fetch/lib/pagination';
+import type {QueryBuilder} from '@centralping/ergo-fetch/lib/query-builder';
+import type {IdempotencyInterceptorOptions} from '@centralping/ergo-fetch/lib/idempotency';
 
 const config: ClientConfig = {
   baseUrl: 'https://api.example.com',
