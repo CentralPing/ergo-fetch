@@ -71,4 +71,32 @@ describe('[Contract] Idempotency — Key Generation and Replay', () => {
       status: 400
     });
   });
+
+  it('duplicate submission with same key and body returns cached response', async () => {
+    const client = createClient({baseUrl, idempotency: true, retry: false, csrf: false});
+
+    const first = await client.post('/idempotent', {
+      body: {item: 'test'},
+      idempotencyKey: 'duplicate-key-1'
+    });
+    const second = await client.post('/idempotent', {
+      body: {item: 'test'},
+      idempotencyKey: 'duplicate-key-1'
+    });
+
+    assert.equal(first.status, 201);
+    assert.equal(second.status, 201);
+    assert.deepEqual(second.body, first.body);
+  });
+
+  it('same key with different body returns 409 conflict', async () => {
+    const client = createClient({baseUrl, idempotency: true, retry: false, csrf: false});
+
+    await client.post('/idempotent', {body: {item: 'a'}, idempotencyKey: 'conflict-key'});
+
+    await assert.rejects(
+      () => client.post('/idempotent', {body: {item: 'b'}, idempotencyKey: 'conflict-key'}),
+      {name: 'ProblemDetailsError', status: 409}
+    );
+  });
 });
