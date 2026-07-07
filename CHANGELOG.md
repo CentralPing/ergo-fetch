@@ -7,18 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0-beta.1] - 2026-07-07
+
 ### Added
 
 - `lib/media-type.js` — Shared media-type parser (`parseMediaType`, `isJsonMediaType`) for
-  RFC-correct JSON Content-Type detection per RFC 9110 Section 8.4 and RFC 6838 Section 4.2.8
+  RFC-correct JSON Content-Type detection per RFC 9110 Section 8.3.1 and RFC 6838 Section 4.2.8
+- `lib/link-header.js` — RFC 8288 Web Linking `Link` header parser
+  (`parseLinkHeader`): character-by-character scanning (no regex), quoted-string
+  handling per RFC 9110 §5.6.4, relative URI resolution, graceful degradation
+  on malformed entries, and `Map<rel, LinkObject>` return type
+- `lib/pagination.js` — Async iterator-based paginator (`createPaginator`) with
+  offset and cursor strategies, Link header following, `X-Total-Count` parsing,
+  `maxPages` safety limit, same-origin confinement for next-link URLs, and
+  backpressure via on-demand page fetching
 - `lib/query-builder.js` — Immutable JSON:API query parameter builder
   (`createQueryBuilder`, `isQueryBuilder`) with structural validation,
   pagination strategy mutual exclusivity, JSON:API reserved namespace
   enforcement, bracket notation serialization, and duck-type detection via
   `Symbol.for('ergo-fetch:query-builder')`
-- `lib/pagination.js` — Async iterator-based paginator (`createPaginator`) with
-  offset and cursor strategies, Link header following, `X-Total-Count` parsing,
-  `maxPages` safety limit, and backpressure via on-demand page fetching
+- `lib/idempotency.js` — Idempotency-Key interceptor
+  (`createIdempotencyInterceptor`): automatic key generation via
+  `crypto.randomUUID()` for configured methods, per-request control via
+  `ctx.idempotent` and `ctx.idempotencyKey`, WeakMap-based key preservation
+  across retries, SHA-256 body fingerprinting to detect accidental key reuse
+  with different content, and TTL-based lazy eviction of registry entries
+- `stores/web-storage.js` — Web Storage cache store adapter
+  (`createWebStorageStore`) backed by `localStorage` or `sessionStorage` for
+  durable conditional request caching that survives page reloads, with
+  oldest-entry eviction by write timestamp, `QuotaExceededError` recovery,
+  `SecurityError` fallback to a no-op store, namespace isolation via
+  configurable prefix, and null-prototype deserialization
+- `lib/client.js` — Phase 2 client integration: `client.paginate()` async
+  iterator method, `client.paginateAll()` convenience method that flattens all
+  pages into a single array, `client.query()` factory returning immutable
+  `QueryBuilder` instances, `idempotency` client config option for automatic
+  idempotency-key interceptor assembly, `idempotencyKey` per-request option,
+  and `options.query` accepts `QueryBuilder` instances (auto-serialized via
+  `toString()`)
+- `index.js` — Public re-exports for `createWebStorageStore`,
+  `createIdempotencyInterceptor`, `parseLinkHeader`, `createPaginator`,
+  `createQueryBuilder`, and `isQueryBuilder`
+- Contract tests for pagination (offset + cursor strategies), idempotency
+  (key generation, replay, fingerprint mismatch), and query builder (chained
+  builder output against test server) in `test/contracts/`
 
 ### Fixed
 
