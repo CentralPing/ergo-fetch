@@ -1,9 +1,10 @@
 /**
  * @fileoverview Contract test server built on @centralping/ergo-router.
  *
- * Provides deterministic routes exercising all Phase 1 interceptor behaviors:
+ * Provides deterministic routes exercising interceptor behaviors:
  * conditional requests (ETag/Last-Modified), rate limiting, CSRF token lifecycle,
- * RFC 9457 problem details, and retry semantics.
+ * RFC 9457 problem details, retry semantics, pagination (offset + cursor),
+ * idempotency-key lifecycle, and JSON:API query parameter echoing.
  *
  * @module test/fixtures/server
  */
@@ -29,6 +30,9 @@ export function createTestServer() {
   registerRetryRoutes(router);
   registerRetryAfterDelayRoutes(router);
   registerTimeoutRoutes(router);
+  registerPaginationRoutes(router);
+  registerIdempotencyRoutes(router);
+  registerJsonApiRoutes(router);
 
   return router;
 }
@@ -363,6 +367,203 @@ function registerTimeoutRoutes(router) {
     }, ms);
 
     res.on('close', () => clearTimeout(timer));
+  });
+}
+
+/**
+ * GET /paginated — offset-based pagination with Link + X-Total-Count headers.
+ * GET /paginated-cursor — cursor-based pagination with Link headers (no X-Total-Count).
+ */
+function registerPaginationRoutes(router) {
+  const items = Array.from({length: 25}, (_, i) => ({id: i + 1, name: `Item ${i + 1}`}));
+
+  router.get('/paginated', (req, res) => {
+    const url = new URL(req.url, 'http://localhost');
+    const rawPage = Number(url.searchParams.get('page') ?? '1');
+    const page = Number.isInteger(rawPage) && rawPage >= 1 ? rawPage : 1;
+    const rawPerPage = Number(url.searchParams.get('perPage') ?? '10');
+    const perPage = Number.isInteger(rawPerPage) && rawPerPage >= 1 ? rawPerPage : 10;
+
+    const start = (page - 1) * perPage;
+    const pageItems = items.slice(start, start + perPage);
+    const totalPages = Math.ceil(items.length / perPage);
+
+    const links = [];
+    links.push(`</paginated?page=1&perPage=${perPage}>; rel="first"`);
+    if (page > 1) links.push(`</paginated?page=${page - 1}&perPage=${perPage}>; rel="prev"`);
+    if (page < totalPages)
+      links.push(`</paginated?page=${page + 1}&perPage=${perPage}>; rel="next"`);
+    links.push(`</paginated?page=${totalPages}&perPage=${perPage}>; rel="last"`);
+
+    res.setHeader('x-total-count', String(items.length));
+    res.setHeader('link', links.join(', '));
+    res.setHeader('content-type', 'application/json');
+    res.statusCode = 200;
+    res.end(JSON.stringify(pageItems));
+  });
+
+  router.get('/paginated-cursor', (req, res) => {
+    const url = new URL(req.url, 'http://localhost');
+    const rawCursor = url.searchParams.get('cursor');
+    const startIndex = rawCursor != null ? Number(rawCursor) : 0;
+    const rawLimit = Number(url.searchParams.get('limit') ?? '10');
+    const limit = Number.isInteger(rawLimit) && rawLimit >= 1 ? rawLimit : 10;
+
+    const pageItems = items.slice(startIndex, startIndex + limit);
+    const nextIndex = startIndex + limit;
+
+    const links = [];
+    links.push(`</paginated-cursor?limit=${limit}>; rel="first"`);
+    if (nextIndex < items.length) {
+      links.push(`</paginated-cursor?cursor=${nextIndex}&limit=${limit}>; rel="next"`);
+    }
+
+    res.setHeader('link', links.join(', '));
+    res.setHeader('content-type', 'application/json');
+    res.statusCode = 200;
+    res.end(JSON.stringify(pageItems));
+  });
+}
+
+/**
+ * POST /idempotent — requires Idempotency-Key header; tracks duplicates.
+ * POST /idempotent-retry — returns 503 on first attempt, 201 on retry (same key).
+ * GET /idempotent/reset — clears idempotency state (test utility).
+ */
+function registerIdempotencyRoutes(router) {
+  /** @type {Map<string, {body: string, status: number, responseBody: object}>} */
+  const seen = new Map();
+  /** @type {Set<string>} */
+  const retrySeen = new Set();
+
+  router.get('/idempotent/reset', (req, res) => {
+    seen.clear();
+    retrySeen.clear();
+    res.statusCode = 204;
+    res.end();
+  });
+
+  router.post('/idempotent', (req, res) => {
+    const key = req.headers['idempotency-key'];
+
+    if (!key) {
+      res.setHeader('content-type', 'application/problem+json');
+      res.statusCode = 400;
+      res.end(
+        JSON.stringify({
+          type: 'https://httpstatuses.com/400',
+          title: 'Bad Request',
+          status: 400,
+          detail: 'Idempotency-Key header is required'
+        })
+      );
+      return;
+    }
+
+    let body = '';
+    req.on('data', chunk => {
+      body += chunk;
+    });
+    req.on('end', () => {
+      const existing = seen.get(key);
+
+      if (existing) {
+        if (existing.body !== body) {
+          res.setHeader('content-type', 'application/problem+json');
+          res.statusCode = 409;
+          res.end(
+            JSON.stringify({
+              type: 'https://httpstatuses.com/409',
+              title: 'Conflict',
+              status: 409,
+              detail: 'Idempotency key already used with a different request'
+            })
+          );
+          return;
+        }
+
+        res.setHeader('content-type', 'application/json');
+        res.statusCode = existing.status;
+        res.end(JSON.stringify(existing.responseBody));
+        return;
+      }
+
+      const responseBody = {created: true, key, received: body || undefined};
+      seen.set(key, {body, status: 201, responseBody});
+
+      res.setHeader('content-type', 'application/json');
+      res.statusCode = 201;
+      res.end(JSON.stringify(responseBody));
+    });
+  });
+
+  router.post('/idempotent-retry', (req, res) => {
+    const key = req.headers['idempotency-key'];
+
+    if (!key) {
+      req.resume();
+      res.setHeader('content-type', 'application/problem+json');
+      res.statusCode = 400;
+      res.end(
+        JSON.stringify({
+          type: 'https://httpstatuses.com/400',
+          title: 'Bad Request',
+          status: 400,
+          detail: 'Idempotency-Key header is required'
+        })
+      );
+      return;
+    }
+
+    req.resume();
+    req.on('end', () => {
+      if (!retrySeen.has(key)) {
+        retrySeen.add(key);
+        res.setHeader('content-type', 'application/problem+json');
+        res.setHeader('retry-after', '0');
+        res.statusCode = 503;
+        res.end(
+          JSON.stringify({
+            type: 'https://httpstatuses.com/503',
+            title: 'Service Unavailable',
+            status: 503,
+            detail: 'Temporary failure — retry'
+          })
+        );
+        return;
+      }
+
+      res.setHeader('content-type', 'application/json');
+      res.statusCode = 201;
+      res.end(JSON.stringify({created: true, key, retried: true}));
+    });
+  });
+}
+
+/**
+ * GET /jsonapi — echoes received query parameters as JSON.
+ * Validates that query builder output arrives at the server correctly.
+ */
+function registerJsonApiRoutes(router) {
+  router.get('/jsonapi', (req, res) => {
+    const url = new URL(req.url, 'http://localhost');
+    const params = Object.create(null);
+
+    for (const [key, value] of url.searchParams) {
+      if (key in params) {
+        if (Array.isArray(params[key])) {
+          params[key].push(value);
+        } else {
+          params[key] = [params[key], value];
+        }
+      } else {
+        params[key] = value;
+      }
+    }
+
+    res.setHeader('content-type', 'application/json');
+    res.statusCode = 200;
+    res.end(JSON.stringify({data: [], query: params}));
   });
 }
 
