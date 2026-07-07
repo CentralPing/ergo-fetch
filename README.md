@@ -299,6 +299,32 @@ const api = createClient({
 });
 ```
 
+### Utilities
+
+#### `parseMediaType(contentType)`
+
+Extracts the normalized `type/subtype` from a Content-Type header value. Strips parameters, trims whitespace, and lowercases per RFC 9110 Section 8.3.1.
+
+```javascript
+import {parseMediaType} from '@centralping/ergo-fetch';
+
+parseMediaType('Application/JSON; charset=utf-8'); // → 'application/json'
+parseMediaType(null); // → undefined
+```
+
+#### `isJsonMediaType(contentType)`
+
+Determines whether a Content-Type represents a JSON media type — matches `application/json` exactly, or any `+json` structured syntax suffix type per RFC 6838.
+
+```javascript
+import {isJsonMediaType} from '@centralping/ergo-fetch';
+
+isJsonMediaType('application/json'); // → true
+isJsonMediaType('application/vnd.api+json'); // → true
+isJsonMediaType('text/plain'); // → false
+isJsonMediaType('text/plain; format=json'); // → false
+```
+
 ### Web Storage Store
 
 Durable cache store backed by `localStorage` or `sessionStorage` that survives

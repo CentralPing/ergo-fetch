@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `lib/media-type.js` — Shared media-type parser (`parseMediaType`, `isJsonMediaType`) for
+  RFC-correct JSON Content-Type detection per RFC 9110 Section 8.3.1 and RFC 6838 Section 4.2.8
 - `lib/link-header.js` — RFC 8288 Web Linking `Link` header parser
   (`parseLinkHeader`): character-by-character scanning (no regex), quoted-string
   handling per RFC 9110 §5.6.4, relative URI resolution, graceful degradation
@@ -49,6 +51,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Contract tests for pagination (offset + cursor strategies), idempotency
   (key generation, replay, fingerprint mismatch), and query builder (chained
   builder output against test server) in `test/contracts/`
+
+### Fixed
+
+- `lib/client.js` and `lib/conditional.js` now use parsed media-type matching
+  (`parseMediaType` + allowlist) instead of substring `includes()` for JSON
+  Content-Type detection — eliminates false positives from `json` appearing in
+  parameters or unrelated subtype positions
 
 ## [0.1.0-beta.1] - 2026-06-21
 
