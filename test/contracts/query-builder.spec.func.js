@@ -36,8 +36,8 @@ describe('[Contract] Query Builder — Server-Side Parameter Validation', () => 
     assert.deepEqual(res.body.query.include, ['author']);
     assert.equal(res.body.query.filter.published, 'true');
     assert.deepEqual(res.body.query.sort, ['-createdAt']);
-    assert.equal(res.body.query.page.number, '1');
-    assert.equal(res.body.query.page.size, '10');
+    assert.equal(res.body.query.page.number, 1);
+    assert.equal(res.body.query.page.size, 10);
   });
 
   it('query() convenience method produces valid request', async () => {
@@ -52,7 +52,7 @@ describe('[Contract] Query Builder — Server-Side Parameter Validation', () => 
     assert.equal(res.status, 200);
     assert.deepEqual(res.body.query.fields.users, ['name', 'email']);
     assert.equal(res.body.query.page.offset, 0);
-    assert.equal(res.body.query.page.limit, '20');
+    assert.equal(res.body.query.page.limit, 20);
   });
 
   it('custom parameter arrives at server', async () => {
