@@ -105,6 +105,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   preventing malformed `X-RateLimit-Remaining` headers from triggering
   spurious proactive throttling delays
 
+### Fixed
+
+- `lib/idempotency.js` — Body fingerprint guard now detects explicit key reuse
+  when body presence changes (bodiless to bodied or vice versa), not only when
+  both requests have bodies with differing content
+
 ## [0.1.0-beta.1] - 2026-06-21
 
 ### Added
