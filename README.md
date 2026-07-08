@@ -43,7 +43,7 @@ console.log(user.body); // parsed JSON body
 | **CSRF lifecycle**                  | Extracts tokens from safe responses, injects on unsafe same-origin requests                                                                   |
 | **Prefer header (RFC 7240)**        | Declarative `return=minimal` / `return=representation` negotiation                                                                            |
 | **Request-ID correlation**          | Captures `X-Request-Id` from responses, optionally generates for requests                                                                     |
-| **Pagination**                      | Async iterator over paginated responses via Link headers (offset and cursor strategies)                                                       |
+| **Pagination (RFC 8288)**           | Async iterator over paginated responses via Link headers (offset and cursor strategies)                                                       |
 | **JSON:API query builder**          | Immutable builder with structural validation and bracket-notation serialization                                                                |
 | **Idempotency-Key management**      | Auto-generates keys for safe mutation retry; body fingerprinting detects reuse errors                                                         |
 | **Web Storage caching**             | localStorage/sessionStorage adapter for durable conditional request caching                                                                   |
@@ -414,13 +414,24 @@ interface Page {
 The iterator fetches the next page only when the consumer calls `.next()` — no
 prefetching, natural backpressure.
 
+**Standalone export:**
+
+```javascript
+import {createPaginator} from '@centralping/ergo-fetch';
+
+const paginator = createPaginator(api, '/users', {perPage: 25});
+for await (const page of paginator) {
+  process(page.data);
+}
+```
+
 ### Query Builder
 
 Construct JSON:API-compliant query strings with structural validation. The
 builder is immutable — each method returns a new instance.
 
 ```javascript
-import {createQueryBuilder} from '@centralping/ergo-fetch';
+import {createQueryBuilder, isQueryBuilder} from '@centralping/ergo-fetch';
 
 const q = createQueryBuilder('/articles')
   .fields('articles', ['title', 'body', 'createdAt'])
@@ -434,6 +445,7 @@ q.toString();
 // → "fields[articles]=title,body,createdAt&fields[authors]=name,avatar&..."
 
 q.path; // → "/articles"
+isQueryBuilder(q); // true
 ```
 
 **Execute via client:**
@@ -520,7 +532,7 @@ import type {
 import type {CacheStore, CacheEntry} from '@centralping/ergo-fetch/stores/memory';
 import type {RateLimitState} from '@centralping/ergo-fetch/lib/rate-limit';
 import type {RetryInterceptorOptions} from '@centralping/ergo-fetch/lib/retry';
-import type {Page, PaginatorOptions} from '@centralping/ergo-fetch/lib/pagination';
+import type {Paginator, PaginatorOptions, Page, PageMeta} from '@centralping/ergo-fetch/lib/pagination';
 import type {QueryBuilder} from '@centralping/ergo-fetch/lib/query-builder';
 import type {IdempotencyInterceptorOptions} from '@centralping/ergo-fetch/lib/idempotency';
 
