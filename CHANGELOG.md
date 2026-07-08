@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `lib/idempotency.js` — `createIdempotencyInterceptor`: `maxEntries` capacity bound
+  (default: 1024) with FIFO eviction to prevent unbounded registry growth under
+  sustained failure traffic (closes #55)
+
 ### Fixed
 
 - `lib/rate-limit.js` — `parseRetryAfter` now validates HTTP-date values against
