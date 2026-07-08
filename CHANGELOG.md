@@ -111,6 +111,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   when body presence changes (bodiless to bodied or vice versa), not only when
   both requests have bodies with differing content
 
+### Fixed
+
+- `lib/idempotency.js` — Body fingerprint mismatch guard now detects asymmetric
+  body presence (bodied request reusing a key from a bodiless request, or vice
+  versa). Previously the triple-AND guard required both stored and current body
+  hashes to be defined before comparing, silently allowing key reuse across
+  fundamentally different payload shapes. (fixes #63)
+
 ## [0.1.0-beta.1] - 2026-06-21
 
 ### Added
