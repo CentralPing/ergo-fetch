@@ -9,7 +9,8 @@
  * @module test/fixtures/server
  */
 
-import createRouter from '@centralping/ergo-router';
+import createRouter, {presets} from '@centralping/ergo-router';
+import {IdempotencyStore} from '@centralping/ergo/lib/idempotency';
 
 /**
  * Creates a configured ergo-router instance with all contract test routes.
@@ -18,7 +19,11 @@ import createRouter from '@centralping/ergo-router';
  */
 export function createTestServer() {
   const router = createRouter({
-    transport: {requestId: {}},
+    ...presets.jsonApi,
+    transport: {
+      ...presets.jsonApi.transport,
+      requestId: {}
+    },
     strictPatch: false,
     strictBody: false
   });
@@ -371,206 +376,183 @@ function registerTimeoutRoutes(router) {
 }
 
 /**
- * GET /paginated — offset-based pagination with Link + X-Total-Count headers.
- * GET /paginated-cursor — cursor-based pagination with Link headers (no X-Total-Count).
+ * GET /paginated — offset pagination via ergo-router `paginate` middleware.
+ * GET /paginated-cursor — cursor pagination via `paginate: {strategy: 'cursor'}`.
+ * GET /paginated-rate-limited — returns 429 once on page 3, then succeeds on retry.
+ * GET /paginated-rate-limited/reset — resets rate-limit state (test utility).
  */
 function registerPaginationRoutes(router) {
   const items = Array.from({length: 25}, (_, i) => ({id: i + 1, name: `Item ${i + 1}`}));
+  let paginatedRateLimitTripped = false;
 
-  router.get('/paginated', (req, res) => {
-    const url = new URL(req.url, 'http://localhost');
-    const rawPage = Number(url.searchParams.get('page') ?? '1');
-    const page = Number.isInteger(rawPage) && rawPage >= 1 ? rawPage : 1;
-    const rawPerPage = Number(url.searchParams.get('perPage') ?? '10');
-    const perPage = Number.isInteger(rawPerPage) && rawPerPage >= 1 ? rawPerPage : 10;
-
-    const start = (page - 1) * perPage;
-    const pageItems = items.slice(start, start + perPage);
-    const totalPages = Math.ceil(items.length / perPage);
-
-    const links = [];
-    links.push(`</paginated?page=1&perPage=${perPage}>; rel="first"`);
-    if (page > 1) links.push(`</paginated?page=${page - 1}&perPage=${perPage}>; rel="prev"`);
-    if (page < totalPages)
-      links.push(`</paginated?page=${page + 1}&perPage=${perPage}>; rel="next"`);
-    links.push(`</paginated?page=${totalPages}&perPage=${perPage}>; rel="last"`);
-
-    res.setHeader('x-total-count', String(items.length));
-    res.setHeader('link', links.join(', '));
-    res.setHeader('content-type', 'application/json');
-    res.statusCode = 200;
-    res.end(JSON.stringify(pageItems));
+  router.get('/paginated-rate-limited/reset', {
+    execute: () => {
+      paginatedRateLimitTripped = false;
+      return {response: {statusCode: 204}};
+    }
   });
 
-  router.get('/paginated-cursor', (req, res) => {
-    const url = new URL(req.url, 'http://localhost');
-    const rawCursor = url.searchParams.get('cursor');
-    const startIndex = rawCursor != null ? Number(rawCursor) : 0;
-    const rawLimit = Number(url.searchParams.get('limit') ?? '10');
-    const limit = Number.isInteger(rawLimit) && rawLimit >= 1 ? rawLimit : 10;
+  router.get('/paginated', {
+    paginate: true,
+    execute: (_req, _res, acc) => {
+      const {offset, limit} = acc.paginate;
+      const pageItems = items.slice(offset, offset + limit);
 
-    const pageItems = items.slice(startIndex, startIndex + limit);
-    const nextIndex = startIndex + limit;
-
-    const links = [];
-    links.push(`</paginated-cursor?limit=${limit}>; rel="first"`);
-    if (nextIndex < items.length) {
-      links.push(`</paginated-cursor?cursor=${nextIndex}&limit=${limit}>; rel="next"`);
+      return {
+        response: {
+          body: pageItems,
+          paginate: {total: items.length}
+        }
+      };
     }
+  });
 
-    res.setHeader('link', links.join(', '));
-    res.setHeader('content-type', 'application/json');
-    res.statusCode = 200;
-    res.end(JSON.stringify(pageItems));
+  router.get('/paginated-cursor', {
+    paginate: {strategy: 'cursor', defaultLimit: 10},
+    execute: (_req, _res, acc) => {
+      const {cursor, limit} = acc.paginate;
+      const startIndex = cursor != null ? Number(cursor) : 0;
+      const pageItems = items.slice(startIndex, startIndex + limit);
+      const nextIndex = startIndex + limit;
+      const paginateMeta = Object.create(null);
+
+      if (nextIndex < items.length) {
+        paginateMeta.nextCursor = String(nextIndex);
+      }
+
+      if (startIndex > 0) {
+        paginateMeta.prevCursor = String(Math.max(0, startIndex - limit));
+      }
+
+      return {
+        response: {
+          body: pageItems,
+          paginate: paginateMeta
+        }
+      };
+    }
+  });
+
+  router.get('/paginated-rate-limited', {
+    paginate: true,
+    execute: (_req, _res, acc) => {
+      const {page, offset, limit} = acc.paginate;
+
+      if (page === 3 && !paginatedRateLimitTripped) {
+        paginatedRateLimitTripped = true;
+        return {
+          response: {
+            statusCode: 429,
+            detail: 'Rate limit exceeded during pagination',
+            retryAfter: 0
+          }
+        };
+      }
+
+      const pageItems = items.slice(offset, offset + limit);
+
+      return {
+        response: {
+          body: pageItems,
+          paginate: {total: items.length}
+        }
+      };
+    }
   });
 }
 
 /**
- * POST /idempotent — requires Idempotency-Key header; tracks duplicates.
- * POST /idempotent-retry — returns 503 on first attempt, 201 on retry (same key).
- * GET /idempotent/reset — clears idempotency state (test utility).
+ * POST /idempotent — ergo `idempotency` middleware with required keys.
+ * POST /idempotent-retry — 503 on first attempt per key, 201 on retry.
+ * GET /idempotent/reset — resets idempotency store (test utility).
  */
 function registerIdempotencyRoutes(router) {
-  /** @type {Map<string, {body: string, status: number, responseBody: object}>} */
-  const seen = new Map();
-  /** @type {Set<string>} */
-  const retrySeen = new Set();
+  const idempotencyStoreRef = {current: new IdempotencyStore()};
+  const resettingStore = Object.create(null);
+  resettingStore.get = key => idempotencyStoreRef.current.get(key);
+  resettingStore.set = (key, fingerprint) => idempotencyStoreRef.current.set(key, fingerprint);
+  resettingStore.complete = (key, response, generation) =>
+    idempotencyStoreRef.current.complete(key, response, generation);
+  resettingStore.delete = key => idempotencyStoreRef.current.delete(key);
 
-  router.get('/idempotent/reset', (req, res) => {
-    seen.clear();
-    retrySeen.clear();
-    res.statusCode = 204;
-    res.end();
+  const idempotencyOptions = Object.freeze({
+    required: true,
+    methods: ['POST'],
+    store: resettingStore
   });
 
-  router.post('/idempotent', (req, res) => {
-    const key = req.headers['idempotency-key'];
+  /** @type {Map<string, number>} */
+  const idempotencyRetryAttempts = new Map();
 
-    if (!key) {
-      req.resume();
-      res.setHeader('content-type', 'application/problem+json');
-      res.statusCode = 400;
-      res.end(
-        JSON.stringify({
-          type: 'https://httpstatuses.com/400',
-          title: 'Bad Request',
-          status: 400,
-          detail: 'Idempotency-Key header is required'
-        })
-      );
-      return;
+  router.get('/idempotent/reset', {
+    execute: () => {
+      idempotencyStoreRef.current = new IdempotencyStore();
+      idempotencyRetryAttempts.clear();
+      return {response: {statusCode: 204}};
     }
+  });
 
-    let body = '';
-    req.on('data', chunk => {
-      body += chunk;
-    });
-    req.on('error', () => {
-      res.destroy();
-    });
-    req.on('end', () => {
-      const existing = seen.get(key);
-
-      if (existing) {
-        if (existing.body !== body) {
-          res.setHeader('content-type', 'application/problem+json');
-          res.statusCode = 409;
-          res.end(
-            JSON.stringify({
-              type: 'https://httpstatuses.com/409',
-              title: 'Conflict',
-              status: 409,
-              detail: 'Idempotency key already used with a different request'
-            })
-          );
-          return;
+  router.post('/idempotent', {
+    idempotency: idempotencyOptions,
+    execute: (_req, _res, acc) => {
+      const received = acc.body?.parsed ?? acc.body?.raw ?? undefined;
+      const response = {
+        statusCode: 201,
+        body: {
+          created: true,
+          key: acc.idempotency?.key,
+          received
         }
+      };
 
-        res.setHeader('content-type', 'application/json');
-        res.statusCode = existing.status;
-        res.end(JSON.stringify(existing.responseBody));
-        return;
-      }
-
-      const responseBody = {created: true, key, received: body || undefined};
-      seen.set(key, {body, status: 201, responseBody});
-
-      res.setHeader('content-type', 'application/json');
-      res.statusCode = 201;
-      res.end(JSON.stringify(responseBody));
-    });
+      acc.idempotency?.complete?.(response);
+      return {response};
+    }
   });
 
-  router.post('/idempotent-retry', (req, res) => {
-    const key = req.headers['idempotency-key'];
+  router.post('/idempotent-retry', {
+    idempotency: idempotencyOptions,
+    execute: (_req, _res, acc) => {
+      const key = acc.idempotency?.key;
+      const attempts = (idempotencyRetryAttempts.get(key) ?? 0) + 1;
+      idempotencyRetryAttempts.set(key, attempts);
 
-    if (!key) {
-      req.resume();
-      res.setHeader('content-type', 'application/problem+json');
-      res.statusCode = 400;
-      res.end(
-        JSON.stringify({
-          type: 'https://httpstatuses.com/400',
-          title: 'Bad Request',
-          status: 400,
-          detail: 'Idempotency-Key header is required'
-        })
-      );
-      return;
-    }
-
-    req.resume();
-    req.on('error', () => {
-      res.destroy();
-    });
-    req.on('end', () => {
-      if (!retrySeen.has(key)) {
-        retrySeen.add(key);
-        res.setHeader('content-type', 'application/problem+json');
-        res.setHeader('retry-after', '0');
-        res.statusCode = 503;
-        res.end(
-          JSON.stringify({
-            type: 'https://httpstatuses.com/503',
-            title: 'Service Unavailable',
-            status: 503,
-            detail: 'Temporary failure — retry'
-          })
-        );
-        return;
+      if (attempts === 1) {
+        acc.idempotency?.discard?.();
+        return {
+          response: {
+            statusCode: 503,
+            detail: 'Temporary failure — retry',
+            retryAfter: 0
+          }
+        };
       }
 
-      res.setHeader('content-type', 'application/json');
-      res.statusCode = 201;
-      res.end(JSON.stringify({created: true, key, retried: true}));
-    });
+      const response = {
+        statusCode: 201,
+        body: {created: true, key, retried: true}
+      };
+
+      acc.idempotency?.complete?.(response);
+      return {response};
+    }
   });
 }
 
 /**
- * GET /jsonapi — echoes received query parameters as JSON.
- * Validates that query builder output arrives at the server correctly.
+ * GET /jsonapi — JSON:API query validation via `jsonApiQuery` middleware; echoes parsed query.
  */
 function registerJsonApiRoutes(router) {
-  router.get('/jsonapi', (req, res) => {
-    const url = new URL(req.url, 'http://localhost');
-    const params = Object.create(null);
-
-    for (const [key, value] of url.searchParams) {
-      if (key in params) {
-        if (Array.isArray(params[key])) {
-          params[key].push(value);
-        } else {
-          params[key] = [params[key], value];
+  router.get('/jsonapi', {
+    jsonApiQuery: true,
+    execute: (_req, _res, acc) => ({
+      response: {
+        body: {
+          data: [],
+          query: acc.url?.query ?? Object.create(null)
         }
-      } else {
-        params[key] = value;
       }
-    }
-
-    res.setHeader('content-type', 'application/json');
-    res.statusCode = 200;
-    res.end(JSON.stringify({data: [], query: params}));
+    })
   });
 }
 

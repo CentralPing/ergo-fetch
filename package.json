@@ -39,6 +39,7 @@
     "preversion": "npm test",
     "types": "tsc",
     "check-types": "npm run types && tsc --project tsconfig.check-types.json",
+    "check-bundle-size": "node scripts/check-bundle-size.js",
     "prepublishOnly": "npm test && npm run check-types",
     "prepare": "simple-git-hooks"
   },
@@ -98,9 +99,11 @@
   "devDependencies": {
     "@centralping/ergo": "^0.6.1",
     "@centralping/ergo-router": "^0.6.0",
+    "@centralping/json-api-query": "^1.0.1",
     "@eslint/js": "^10.0.1",
     "@types/node": "^25.9.1",
     "c8": "^11.0.0",
+    "esbuild": "^0.25.0",
     "eslint": "^10.0.3",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.4.0",

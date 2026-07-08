@@ -32,12 +32,12 @@ describe('[Contract] Query Builder — Server-Side Parameter Validation', () => 
     const res = await client.get('/jsonapi', {query});
 
     assert.equal(res.status, 200);
-    assert.equal(res.body.query['fields[articles]'], 'title,body');
-    assert.equal(res.body.query['include'], 'author');
-    assert.equal(res.body.query['filter[published]'], 'true');
-    assert.equal(res.body.query['sort'], '-createdAt');
-    assert.equal(res.body.query['page[number]'], '1');
-    assert.equal(res.body.query['page[size]'], '10');
+    assert.deepEqual(res.body.query.fields.articles, ['title', 'body']);
+    assert.deepEqual(res.body.query.include, ['author']);
+    assert.equal(res.body.query.filter.published, 'true');
+    assert.deepEqual(res.body.query.sort, ['-createdAt']);
+    assert.equal(res.body.query.page.number, '1');
+    assert.equal(res.body.query.page.size, '10');
   });
 
   it('query() convenience method produces valid request', async () => {
@@ -50,9 +50,9 @@ describe('[Contract] Query Builder — Server-Side Parameter Validation', () => 
     const res = await query.fetch(client);
 
     assert.equal(res.status, 200);
-    assert.equal(res.body.query['fields[users]'], 'name,email');
-    assert.equal(res.body.query['page[offset]'], '0');
-    assert.equal(res.body.query['page[limit]'], '20');
+    assert.deepEqual(res.body.query.fields.users, ['name', 'email']);
+    assert.equal(res.body.query.page.offset, 0);
+    assert.equal(res.body.query.page.limit, '20');
   });
 
   it('custom parameter arrives at server', async () => {
@@ -62,8 +62,8 @@ describe('[Contract] Query Builder — Server-Side Parameter Validation', () => 
     const res = await client.get('/jsonapi', {query});
 
     assert.equal(res.status, 200);
-    assert.equal(res.body.query['filter[status]'], 'active');
-    assert.equal(res.body.query['camelCase'], 'value');
+    assert.equal(res.body.query.filter.status, 'active');
+    assert.equal(res.body.query.camelCase, 'value');
   });
 
   it('multiple field types arrive correctly', async () => {
@@ -75,8 +75,8 @@ describe('[Contract] Query Builder — Server-Side Parameter Validation', () => 
     const res = await client.get('/jsonapi', {query});
 
     assert.equal(res.status, 200);
-    assert.equal(res.body.query['fields[articles]'], 'title,body,createdAt');
-    assert.equal(res.body.query['fields[authors]'], 'name,avatar');
+    assert.deepEqual(res.body.query.fields.articles, ['title', 'body', 'createdAt']);
+    assert.deepEqual(res.body.query.fields.authors, ['name', 'avatar']);
   });
 
   it('empty builder produces no query parameters', async () => {
