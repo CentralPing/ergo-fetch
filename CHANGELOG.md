@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `lib/assert-path-absolute.js` — Shared RFC 3986 `path-absolute` validator
+  (`isPathAbsolute`, `assertPathAbsolute`) extracted from `query-builder.js`,
+  used by `client.js`, `pagination.js`, and `query-builder.js` for unified path
+  validation via character-by-character allowlist scanning
 - `lib/media-type.js` — Shared media-type parser (`parseMediaType`, `isJsonMediaType`) for
   RFC-correct JSON Content-Type detection per RFC 9110 Section 8.3.1 and RFC 6838 Section 4.2.8
 - `lib/link-header.js` — RFC 8288 Web Linking `Link` header parser
@@ -65,6 +69,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`parseMediaType` + allowlist) instead of substring `includes()` for JSON
   Content-Type detection — eliminates false positives from `json` appearing in
   parameters or unrelated subtype positions
+
+### Changed
+
+- `lib/client.js` — Path validation upgraded from `startsWith('/')` denylist to
+  RFC 3986 `path-absolute` allowlist via `assertPathAbsolute`; now rejects
+  backslashes, control characters, non-ASCII, and `//` authority escapes
+- `lib/pagination.js` — Path validation upgraded from dual-prefix denylist to
+  RFC 3986 `path-absolute` allowlist; Link `rel="next"` href fallback branch now
+  validates the path portion with `isPathAbsolute` instead of prefix checks
+- `lib/query-builder.js` — Path validation functions (`isHexDigit`,
+  `isValidPathCode`, `isValidBasePath`) extracted to shared
+  `lib/assert-path-absolute.js`; behavior is unchanged
 
 ## [0.1.0-beta.1] - 2026-06-21
 
