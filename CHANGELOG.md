@@ -82,6 +82,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `isValidPathCode`, `isValidBasePath`) extracted to shared
   `lib/assert-path-absolute.js`; behavior is unchanged
 
+### Fixed
+
+- `lib/link-header.js` — `parseQuotedString` now validates content against RFC 9110
+  §5.6.4 `qdtext` and `quoted-pair` grammars. Characters outside the allowlist (NUL,
+  CR, LF, DEL, C0 controls, and invalid quoted-pair targets) cause the entire
+  link-value to be gracefully skipped. Unterminated quoted-strings are now also
+  treated as invalid. (fixes #49)
+
 ## [0.1.0-beta.1] - 2026-06-21
 
 ### Added
