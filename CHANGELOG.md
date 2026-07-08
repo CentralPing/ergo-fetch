@@ -90,6 +90,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   link-value to be gracefully skipped. Unterminated quoted-strings are now also
   treated as invalid. (fixes #49)
 
+### Fixed
+
+- `lib/rate-limit.js` — `getState()` now returns a null-prototype object
+  (`Object.create(null)`) instead of a plain object literal, matching the
+  codebase's null-prototype policy for all consumer-facing objects
+- `lib/rate-limit.js` — `parseHeaderNumber` now rejects negative values,
+  preventing malformed `X-RateLimit-Remaining` headers from triggering
+  spurious proactive throttling delays
+
 ## [0.1.0-beta.1] - 2026-06-21
 
 ### Added
