@@ -777,4 +777,17 @@ describe('createWebStorageStore', () => {
       assert.deepStrictEqual(await store.get('new'), entry({etag: '"v2"'}));
     });
   });
+
+  describe('reload simulation', () => {
+    it('restores cached entries from the same storage backend after re-instantiation', async () => {
+      const storage = createMockStorage();
+      const firstStore = createWebStorageStore({storage});
+      await firstStore.set('articles', {etag: '"v1"', body: {data: [1]}});
+
+      const reloadedStore = createWebStorageStore({storage});
+      const result = await reloadedStore.get('articles');
+
+      assert.deepStrictEqual(result, entry({etag: '"v1"', body: {data: [1]}}));
+    });
+  });
 });

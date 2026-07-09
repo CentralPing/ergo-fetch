@@ -9,12 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `scripts/check-bundle-size.js` — esbuild min+gzip bundle size gate for Phase 2 delta vs Phase 1 baseline
+- `@centralping/json-api-query` devDependency with round-trip validation tests for query builder output
+- Contract test `test/contracts/pagination-retry.spec.func.js` for 429 mid-pagination retry recovery
 - `lib/idempotency.js` — `createIdempotencyInterceptor`: `maxEntries` capacity bound
   (default: 1024) with FIFO eviction to prevent unbounded registry growth under
   sustained failure traffic (closes #55)
 
 ### Fixed
 
+- `lib/pagination.js` — `options.query` accepts `QueryBuilder` instances; offset strategy serializes `per_page` for ergo-router `paginate` middleware compatibility
+- `lib/query-builder.js` — cursor pagination exclusivity enforced at build time (blocks `fields`/`include`/`filter`/`sort` after `page({cursor})` and vice versa)
+- `lib/idempotency.js` — `Idempotency-Key` header values formatted as RFC 8941 quoted strings for ergo-router middleware compatibility
+- `test/fixtures/server.js` — contract server routes use ergo-router `presets.jsonApi`, `paginate`, and `idempotency` middleware
 - `lib/rate-limit.js` — `parseRetryAfter` now validates HTTP-date values against
   IMF-fixdate grammar (RFC 9110 §5.6.7) instead of accepting any string
   `Date.parse` can interpret. Non-IMF date formats (ISO 8601, RFC 850, asctime,
