@@ -20,6 +20,7 @@ jobs:
           node-version: ${{ matrix.node-version }}
       - run: npm ci --ignore-scripts
       - run: npm test
+      - run: npm run check-types
       - if: matrix.node-version == 22
         uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v5
         with:
