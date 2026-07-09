@@ -27,6 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `lib/idempotency.js` — serialize explicit-key fingerprint registry access per key
+  so concurrent requests cannot bypass fingerprint-mismatch detection (closes #75)
 - `lib/pagination.js` — `options.query` accepts `QueryBuilder` instances; offset strategy serializes `per_page` for ergo-router `paginate` middleware compatibility
 - `lib/query-builder.js` — cursor pagination exclusivity enforced at build time (blocks `fields`/`include`/`filter`/`sort` after `page({cursor})` and vice versa)
 - `lib/idempotency.js` — `Idempotency-Key` header values formatted as RFC 8941 quoted strings for ergo-router middleware compatibility
