@@ -376,11 +376,21 @@ function registerTimeoutRoutes(router) {
 }
 
 /**
- * GET /paginated — offset pagination via `paginate: true` and ergo Link headers.
+ * GET /paginated — offset pagination via ergo-router `paginate` middleware.
  * GET /paginated-cursor — cursor pagination via `paginate: {strategy: 'cursor'}`.
+ * GET /paginated-rate-limited — returns 429 once on page 3, then succeeds on retry.
+ * GET /paginated-rate-limited/reset — resets rate-limit state (test utility).
  */
 function registerPaginationRoutes(router) {
   const items = Array.from({length: 25}, (_, i) => ({id: i + 1, name: `Item ${i + 1}`}));
+  let paginatedRateLimitTripped = false;
+
+  router.get('/paginated-rate-limited/reset', {
+    execute: () => {
+      paginatedRateLimitTripped = false;
+      return {response: {statusCode: 204}};
+    }
+  });
 
   router.get('/paginated', {
     paginate: true,
@@ -422,6 +432,33 @@ function registerPaginationRoutes(router) {
       };
     }
   });
+
+  router.get('/paginated-rate-limited', {
+    paginate: true,
+    execute: (_req, _res, acc) => {
+      const {page, offset, limit} = acc.paginate;
+
+      if (page === 3 && !paginatedRateLimitTripped) {
+        paginatedRateLimitTripped = true;
+        return {
+          response: {
+            statusCode: 429,
+            detail: 'Rate limit exceeded during pagination',
+            retryAfter: 0
+          }
+        };
+      }
+
+      const pageItems = items.slice(offset, offset + limit);
+
+      return {
+        response: {
+          body: pageItems,
+          paginate: {total: items.length}
+        }
+      };
+    }
+  });
 }
 
 /**
@@ -433,8 +470,7 @@ function registerIdempotencyRoutes(router) {
   const idempotencyStoreRef = {current: new IdempotencyStore()};
   const resettingStore = Object.create(null);
   resettingStore.get = key => idempotencyStoreRef.current.get(key);
-  resettingStore.set = (key, storeFingerprint) =>
-    idempotencyStoreRef.current.set(key, storeFingerprint);
+  resettingStore.set = (key, fingerprint) => idempotencyStoreRef.current.set(key, fingerprint);
   resettingStore.complete = (key, response, generation) =>
     idempotencyStoreRef.current.complete(key, response, generation);
   resettingStore.delete = key => idempotencyStoreRef.current.delete(key);
