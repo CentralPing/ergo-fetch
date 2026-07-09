@@ -96,6 +96,9 @@
       "optional": true
     }
   },
+  "dependencies": {
+    "@centralping/ergo-wire": "github:CentralPing/ergo-wire#v0.1.0-beta.1"
+  },
   "devDependencies": {
     "@centralping/ergo": "^0.6.1",
     "@centralping/ergo-router": "^0.6.0",

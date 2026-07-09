@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Add `@centralping/ergo-wire` runtime dependency (`github:CentralPing/ergo-wire#v0.1.0-beta.1`
+  until the package is published to npm); delegate Link parsing, Retry-After parsing,
+  idempotency sf-string formatting, body fingerprinting, and offset pagination
+  serialization to ergo-wire for wire-key alignment with ergo (`per_page`, RFC 8941 keys)
+- `lib/link-header.js` — thin re-export of `parseLinkHeader` from ergo-wire
+- `lib/rate-limit.js` — `parseRetryAfter` delegates to ergo-wire
+
 ### Added
 
 - `scripts/check-bundle-size.js` — esbuild min+gzip bundle size gate for Phase 2 delta vs Phase 1 baseline
