@@ -106,7 +106,7 @@
     "@eslint/js": "^10.0.1",
     "@types/node": "^26.0.1",
     "c8": "^11.0.0",
-    "esbuild": "^0.25.0",
+    "esbuild": "^0.28.1",
     "eslint": "^10.0.3",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.4.0",
