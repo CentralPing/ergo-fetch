@@ -113,31 +113,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   CR, LF, DEL, C0 controls, and invalid quoted-pair targets) cause the entire
   link-value to be gracefully skipped. Unterminated quoted-strings are now also
   treated as invalid. (fixes #49)
-
-### Fixed
-
 - `lib/rate-limit.js` — `getState()` now returns a null-prototype object
   (`Object.create(null)`) instead of a plain object literal, matching the
   codebase's null-prototype policy for all consumer-facing objects
 - `lib/rate-limit.js` — `parseHeaderNumber` now rejects negative values,
   preventing malformed `X-RateLimit-Remaining` headers from triggering
   spurious proactive throttling delays
-
-### Fixed
-
 - `lib/idempotency.js` — Body fingerprint guard now detects explicit key reuse
   when body presence changes (bodiless to bodied or vice versa), not only when
   both requests have bodies with differing content
-
-### Fixed
-
 - `lib/idempotency.js` — Bodiless body fingerprinting now treats `undefined`,
   `null`, and `''` equivalently (no digest stored). Previously only `undefined`
   skipped fingerprinting, so explicit-key reuse across bodiless variants could
   throw or falsely reject. (fixes #81)
-
-### Fixed
-
 - `lib/idempotency.js` — Body fingerprint mismatch guard now detects asymmetric
   body presence (bodied request reusing a key from a bodiless request, or vice
   versa). Previously the triple-AND guard required both stored and current body
