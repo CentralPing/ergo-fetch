@@ -131,6 +131,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `lib/idempotency.js` — Bodiless body fingerprinting now treats `undefined`,
+  `null`, and `''` equivalently (no digest stored). Previously only `undefined`
+  skipped fingerprinting, so explicit-key reuse across bodiless variants could
+  throw or falsely reject. (fixes #81)
+
+### Fixed
+
 - `lib/idempotency.js` — Body fingerprint mismatch guard now detects asymmetric
   body presence (bodied request reusing a key from a bodiless request, or vice
   versa). Previously the triple-AND guard required both stored and current body
