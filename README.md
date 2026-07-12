@@ -506,6 +506,8 @@ await api.post('/webhooks', {body: data, idempotent: false});
 **Body fingerprinting:** When an explicit key is reused, the interceptor
 compares SHA-256 digests of the request body. A mismatch throws `TypeError`
 (accidental key reuse with different content is a programming error).
+`undefined`, `null`, and `''` are treated equivalently as bodiless for
+fingerprint comparison.
 
 **Key lifecycle:**
 
