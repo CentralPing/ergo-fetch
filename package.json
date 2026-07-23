@@ -100,7 +100,7 @@
     "@centralping/ergo-wire": "^0.1.0-beta.2"
   },
   "devDependencies": {
-    "@centralping/ergo": "^0.6.1",
+    "@centralping/ergo": "^0.8.0",
     "@centralping/ergo-router": "^0.6.0",
     "@centralping/json-api-query": "^1.0.1",
     "@eslint/js": "^10.0.1",
