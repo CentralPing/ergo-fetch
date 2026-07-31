@@ -78,7 +78,7 @@ reviews:
         is the default. Web Storage and IndexedDB are optional.
 
   auto_review:
-    enabled: true
+    enabled: false
     auto_incremental_review: false
     drafts: false
     ignore_title_keywords:
